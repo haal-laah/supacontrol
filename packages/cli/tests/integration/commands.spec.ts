@@ -40,7 +40,6 @@ import { resolveEnvironment, getEnvironmentByName } from '../../src/config/resol
 import { checkLock } from '../../src/guards/lock-guard.js';
 import { checkOperation } from '../../src/guards/operation-guard.js';
 import { buildGuardContext, combineResults } from '../../src/guards/index.js';
-import type { Config } from '../../src/config/schema.js';
 
 describe('CLI Commands Integration', () => {
   let testDir: string;

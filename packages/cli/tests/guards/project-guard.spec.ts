@@ -15,7 +15,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { checkProjectMatch, clearProjectCache, getCurrentLinkedProject } from '../../src/guards/project-guard.js';
-import { PROJECT_GUARD_CASES, BASE_ENVIRONMENTS, createTestContext } from '../fixtures/guard.fixtures.js';
+import { BASE_ENVIRONMENTS, createTestContext } from '../fixtures/guard.fixtures.js';
 import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';

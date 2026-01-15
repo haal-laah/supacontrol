@@ -13,7 +13,7 @@
  * ====================================================================
  */
 
-import type { GuardContext, GuardResult, OperationType, RiskLevel } from '../../src/guards/types.js';
+import type { GuardContext, OperationType, RiskLevel } from '../../src/guards/types.js';
 import type { Config, Environment } from '../../src/config/schema.js';
 
 /**

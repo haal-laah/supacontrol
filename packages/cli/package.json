@@ -1,6 +1,6 @@
 {
   "name": "@supacontrol/cli",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "CLI wrapper around Supabase CLI with safety guards and environment management",
   "type": "module",
   "main": "dist/index.js",
@@ -40,13 +40,21 @@
     "cli",
     "database",
     "safety",
-    "guards"
+    "guards",
+    "migrations",
+    "environment",
+    "production",
+    "devops"
   ],
-  "author": "",
+  "author": "SupaControl Contributors",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/supacontrol/supacontrol/issues"
+  },
+  "homepage": "https://github.com/supacontrol/supacontrol#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/supacontrol.git",
+    "url": "git+https://github.com/supacontrol/supacontrol.git",
     "directory": "packages/cli"
   },
   "devDependencies": {

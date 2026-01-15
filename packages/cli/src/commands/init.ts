@@ -5,10 +5,10 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { type GlobalOptions, program, withErrorHandling } from '../index.js';
 import { configExists, writeConfig } from '../config/writer.js';
-import type { Config, Environment } from '../config/schema.js';
+import type { Config } from '../config/schema.js';
 import { getOrPromptForToken, getAccessToken } from '../auth/credentials.js';
 import { createSupabaseClient, type Project } from '../api/supabase-client.js';
-import { fetchAndDisplayProjects, displayProjectSummary } from '../api/project-selector.js';
+import { displayProjectSummary } from '../api/project-selector.js';
 
 /**
  * Check if Supabase is initialized in the project
@@ -253,7 +253,7 @@ async function initAction(): Promise<void> {
     environments: createEnvironmentConfig(preset, projectRefs),
   };
 
-  const configPath = await writeConfig(config);
+  await writeConfig(config);
   console.log(pc.green('✓'), `Created ${pc.bold('supacontrol.toml')}`);
 
   // Step 7: Show next steps

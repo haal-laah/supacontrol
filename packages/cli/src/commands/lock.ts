@@ -37,7 +37,7 @@ export function createUnlockCommand(): Command {
 /**
  * Run the lock command
  */
-async function runLock(envName: string | undefined, options: GlobalOptions): Promise<void> {
+async function runLock(envName: string | undefined, _options: GlobalOptions): Promise<void> {
   clearGitCache();
 
   const config = await loadConfigOrExit();

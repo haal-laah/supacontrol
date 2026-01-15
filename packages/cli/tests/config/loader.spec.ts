@@ -6,9 +6,9 @@
  * ====================================================================
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { loadConfig, ConfigError } from '../../src/config/loader.js';
-import { VALID_CONFIGS, INVALID_CONFIGS, EXPECTED_PARSED } from '../fixtures/config.fixtures.js';
+import { VALID_CONFIGS, INVALID_CONFIGS } from '../fixtures/config.fixtures.js';
 import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';

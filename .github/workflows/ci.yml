@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & Test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify test fixtures (CRITICAL)
+        run: pnpm --filter @supacontrol/cli verify-fixtures
+        # This MUST pass - fixture checksums prevent accidental test modifications
+
+      - name: Run linter
+        run: pnpm --filter @supacontrol/cli lint
+
+      - name: Type check
+        run: pnpm --filter @supacontrol/cli typecheck
+
+      - name: Run tests
+        run: pnpm --filter @supacontrol/cli test:coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: matrix.node-version == 20
+        with:
+          directory: packages/cli/coverage
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Build
+        run: pnpm --filter @supacontrol/cli build
+
+  release-check:
+    name: Release Readiness
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build for release
+        run: pnpm --filter @supacontrol/cli build
+
+      - name: Verify package.json
+        run: |
+          cd packages/cli
+          node -e "
+            const pkg = require('./package.json');
+            const required = ['name', 'version', 'description', 'bin', 'main', 'types'];
+            const missing = required.filter(f => !pkg[f]);
+            if (missing.length) {
+              console.error('Missing required fields:', missing);
+              process.exit(1);
+            }
+            console.log('Package ready for release:', pkg.name, '@', pkg.version);
+          "
+
+      - name: Check dist output
+        run: |
+          test -f packages/cli/dist/index.js || (echo "Missing dist/index.js" && exit 1)
+          test -f packages/cli/dist/index.d.ts || (echo "Missing dist/index.d.ts" && exit 1)
+          echo "Build artifacts verified"

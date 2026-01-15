@@ -13,9 +13,9 @@
  * ====================================================================
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { combineResults, type GuardResult } from '../../src/guards/types.js';
-import { BASE_ENVIRONMENTS, BASE_CONFIG, createTestContext } from '../fixtures/guard.fixtures.js';
+import { BASE_ENVIRONMENTS, createTestContext } from '../fixtures/guard.fixtures.js';
 
 describe('Guard Runner', () => {
   describe('combineResults', () => {
