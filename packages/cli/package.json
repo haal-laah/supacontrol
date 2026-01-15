@@ -1,0 +1,45 @@
+{
+  "name": "@supacontrol/cli",
+  "version": "0.0.1",
+  "description": "CLI wrapper around Supabase CLI with safety guards and environment management",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "supacontrol": "dist/index.js",
+    "supac": "dist/index.js",
+    "spc": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src tests",
+    "lint:fix": "eslint src tests --fix",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "verify-fixtures": "node scripts/verify-fixtures.js"
+  },
+  "keywords": [
+    "supabase",
+    "cli",
+    "database",
+    "safety",
+    "guards"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/supacontrol.git",
+    "directory": "packages/cli"
+  }
+}
