@@ -1,6 +1,9 @@
 import { Command } from 'commander';
 import pc from 'picocolors';
 import { createRequire } from 'node:module';
+import { createStatusCommand } from './commands/status.js';
+import { createPushCommand } from './commands/push.js';
+import { createResetCommand } from './commands/reset.js';
 
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json') as { version: string; description: string };
@@ -55,6 +58,11 @@ function withErrorHandling<T extends (...args: unknown[]) => Promise<void>>(
 
 // Export for use in commands
 export { program, withErrorHandling };
+
+// Register commands
+program.addCommand(createStatusCommand());
+program.addCommand(createPushCommand());
+program.addCommand(createResetCommand());
 
 // Parse and execute
 program.parse();
