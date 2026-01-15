@@ -8,6 +8,7 @@ import { createPullCommand } from './commands/pull.js';
 import { createSwitchCommand } from './commands/switch.js';
 import { createLockCommand, createUnlockCommand } from './commands/lock.js';
 import { createDoctorCommand } from './commands/doctor.js';
+import { createInitCommand } from './commands/init.js';
 
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json') as { version: string; description: string };
@@ -64,6 +65,7 @@ function withErrorHandling<T extends (...args: unknown[]) => Promise<void>>(
 export { program, withErrorHandling };
 
 // Register commands
+program.addCommand(createInitCommand());
 program.addCommand(createStatusCommand());
 program.addCommand(createPushCommand());
 program.addCommand(createResetCommand());
