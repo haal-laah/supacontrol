@@ -4,6 +4,10 @@ import { createRequire } from 'node:module';
 import { createStatusCommand } from './commands/status.js';
 import { createPushCommand } from './commands/push.js';
 import { createResetCommand } from './commands/reset.js';
+import { createPullCommand } from './commands/pull.js';
+import { createSwitchCommand } from './commands/switch.js';
+import { createLockCommand, createUnlockCommand } from './commands/lock.js';
+import { createDoctorCommand } from './commands/doctor.js';
 
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json') as { version: string; description: string };
@@ -63,6 +67,11 @@ export { program, withErrorHandling };
 program.addCommand(createStatusCommand());
 program.addCommand(createPushCommand());
 program.addCommand(createResetCommand());
+program.addCommand(createPullCommand());
+program.addCommand(createSwitchCommand());
+program.addCommand(createLockCommand());
+program.addCommand(createUnlockCommand());
+program.addCommand(createDoctorCommand());
 
 // Parse and execute
 program.parse();
