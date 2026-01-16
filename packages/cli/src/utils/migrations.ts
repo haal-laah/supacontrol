@@ -186,18 +186,19 @@ export async function ensureMigrationSync(): Promise<boolean> {
 export interface RepairResult {
   success: boolean;
   error?: string;
+  /** Remote migrations that were marked as reverted */
   repairedRemote: string[];
-  repairedLocal: string[];
 }
 
 /**
  * Repair migration history mismatch between local and remote.
  * 
  * Strategy:
- * 1. Mark remote-only migrations as 'reverted' (tells Supabase to forget them)
- * 2. Mark local-only migrations as 'applied' (tells Supabase they're already run)
+ * - Mark remote-only migrations as 'reverted' (tells Supabase to forget them)
+ * - Local-only migrations are left alone - they'll be pushed normally
  * 
  * This allows the next push to proceed without conflicts.
+ * Local migrations become the source of truth.
  */
 export async function repairMigrationHistory(
   status: MigrationSyncStatus
@@ -205,12 +206,11 @@ export async function repairMigrationHistory(
   const result: RepairResult = {
     success: false,
     repairedRemote: [],
-    repairedLocal: [],
   };
 
   const spinner = p.spinner();
 
-  // Step 1: Mark remote-only migrations as reverted
+  // Mark remote-only migrations as reverted (Supabase forgets about them)
   if (status.remoteMissing.length > 0) {
     spinner.start('Marking remote-only migrations as reverted...');
     
@@ -232,27 +232,8 @@ export async function repairMigrationHistory(
     spinner.stop(`Reverted ${status.remoteMissing.length} remote migration(s)`);
   }
 
-  // Step 2: Mark local-only migrations as applied
-  if (status.localMissing.length > 0) {
-    spinner.start('Marking local migrations as applied...');
-    
-    for (const version of status.localMissing) {
-      const repairResult = await runSupabase(
-        ['migration', 'repair', '--status', 'applied', version],
-        { stream: false }
-      );
-      
-      if (!repairResult.success) {
-        spinner.stop('Repair failed');
-        result.error = `Failed to mark local migration ${version} as applied`;
-        return result;
-      }
-      
-      result.repairedLocal.push(version);
-    }
-    
-    spinner.stop(`Marked ${status.localMissing.length} local migration(s) as applied`);
-  }
+  // Note: We intentionally DON'T mark local migrations as "applied"
+  // They need to actually run on push to apply their changes to the DB
 
   result.success = true;
   return result;
@@ -309,12 +290,12 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
   
   if (status.remoteMissing.length > 0) {
     repairExplanation.push(`  • Mark ${status.remoteMissing.length} remote migration(s) as ${pc.yellow('reverted')}`);
-    repairExplanation.push(pc.dim('    (Supabase will forget about these migrations)'));
+    repairExplanation.push(pc.dim('    (Supabase will forget about these - they were likely auto-created)'));
   }
   
   if (status.localMissing.length > 0) {
-    repairExplanation.push(`  • Mark ${status.localMissing.length} local migration(s) as ${pc.green('applied')}`);
-    repairExplanation.push(pc.dim('    (Tells Supabase these are already in the database)'));
+    repairExplanation.push(`  • ${status.localMissing.length} local migration(s) will be ${pc.green('pushed')} to remote`);
+    repairExplanation.push(pc.dim('    (These will run on the remote database)'));
   }
   
   repairExplanation.push('');
@@ -401,13 +382,10 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
   
   if (repairResult.success) {
     console.log();
-    console.log(pc.green('✓'), 'Migration history repaired successfully');
+    console.log(pc.green('✓'), 'Migration history repaired');
     
     if (repairResult.repairedRemote.length > 0) {
       console.log(pc.dim(`  Reverted: ${repairResult.repairedRemote.join(', ')}`));
-    }
-    if (repairResult.repairedLocal.length > 0) {
-      console.log(pc.dim(`  Applied: ${repairResult.repairedLocal.join(', ')}`));
     }
     
     return { success: true };
