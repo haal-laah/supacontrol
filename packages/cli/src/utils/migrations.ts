@@ -1,8 +1,23 @@
-import { readdir, rename, readFile, writeFile, rm } from 'node:fs/promises';
+import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import pc from 'picocolors';
 import * as p from '@clack/prompts';
 import { runSupabase } from './supabase.js';
+
+/**
+ * Generate a timestamp in Supabase migration format (YYYYMMDDHHmmss)
+ */
+function generateMigrationTimestamp(): string {
+  const now = new Date();
+  return [
+    now.getUTCFullYear(),
+    String(now.getUTCMonth() + 1).padStart(2, '0'),
+    String(now.getUTCDate()).padStart(2, '0'),
+    String(now.getUTCHours()).padStart(2, '0'),
+    String(now.getUTCMinutes()).padStart(2, '0'),
+    String(now.getUTCSeconds()).padStart(2, '0'),
+  ].join('');
+}
 
 /**
  * Result of checking migration sync status
@@ -243,9 +258,10 @@ export async function repairMigrationHistory(
  * Full migration sync workflow with user interaction.
  * 
  * Detects mismatches and offers repair options:
- * 1. Repair history (mark remote as reverted, local as applied)
- * 2. Pull from remote (get remote migrations, potentially losing local changes)
- * 3. Cancel
+ * 1. Rescue (for remote-only migrations with no local files)
+ * 2. Repair history (mark remote as reverted, keep local)
+ * 3. Pull from remote (get remote migrations, potentially losing local changes)
+ * 4. Cancel
  */
 export async function interactiveMigrationSync(): Promise<{ success: boolean; cancelled?: boolean }> {
   const status = await checkMigrationSync();
@@ -259,6 +275,18 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
   // No mismatch - all good
   if (status.remoteMissing.length === 0 && status.localMissing.length === 0) {
     return { success: true };
+  }
+
+  // Check if this is a rescue scenario (remote has migrations, local has few/none)
+  const localMigrations = await getLocalMigrations();
+  const isRescueScenario = status.remoteMissing.length > 0 && 
+                          localMigrations.length === 0 &&
+                          status.localMissing.length === 0;
+
+  if (isRescueScenario) {
+    // This looks like a new user with remote-only migrations
+    const rescueResult = await interactiveMigrationRescue();
+    return rescueResult;
   }
 
   // Show the mismatch details
@@ -303,29 +331,66 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
   
   p.note(repairExplanation.join('\n'), 'Repair Option');
 
+  // Build options based on the scenario
+  const options: Array<{ value: string; label: string; hint: string }> = [];
+
+  // If we have local migrations to keep, repair is the main option
+  if (status.localMissing.length > 0) {
+    options.push({
+      value: 'repair',
+      label: 'Repair migration history',
+      hint: 'Recommended - keeps your local migrations, forgets remote-only ones',
+    });
+  }
+
+  // If remote has migrations we don't have locally, offer rescue
+  if (status.remoteMissing.length > 0) {
+    options.push({
+      value: 'rescue',
+      label: 'Create baseline from current schema',
+      hint: 'Captures remote schema in a local file, then clears history',
+    });
+  }
+
+  options.push({
+    value: 'pull',
+    label: 'Pull from remote instead',
+    hint: 'Replaces local migrations with remote state',
+  });
+
+  options.push({
+    value: 'cancel',
+    label: pc.dim('Cancel'),
+    hint: 'Abort and fix manually',
+  });
+
   const choice = await p.select({
     message: 'How would you like to resolve this?',
-    options: [
-      {
-        value: 'repair',
-        label: 'Repair migration history',
-        hint: 'Recommended - keeps your local migrations',
-      },
-      {
-        value: 'pull',
-        label: 'Pull from remote instead',
-        hint: 'Replaces local migrations with remote state',
-      },
-      {
-        value: 'cancel',
-        label: pc.dim('Cancel'),
-        hint: 'Abort and fix manually',
-      },
-    ],
+    options,
   });
 
   if (p.isCancel(choice) || choice === 'cancel') {
     return { success: false, cancelled: true };
+  }
+
+  if (choice === 'rescue') {
+    // Rescue flow - create baseline from current schema
+    console.log();
+    console.log(pc.blue('→'), 'Starting migration rescue...');
+    console.log();
+
+    const rescueResult = await rescueMigrations(status.remoteMissing);
+    
+    if (rescueResult.success) {
+      console.log();
+      console.log(pc.green('✓'), 'Migration rescue complete!');
+      console.log(pc.dim(`  Baseline: ${rescueResult.baselinePath}`));
+      return { success: true };
+    } else {
+      console.log();
+      console.log(pc.red('✗'), 'Rescue failed:', rescueResult.error);
+      return { success: false };
+    }
   }
 
   if (choice === 'pull') {
@@ -333,10 +398,10 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
     console.log(pc.blue('→'), 'Pulling migrations from remote...');
     
     // First, backup local migrations
-    const localMigrations = await getLocalMigrationDetails();
-    if (localMigrations.length > 0) {
+    const localDetails = await getLocalMigrationDetails();
+    if (localDetails.length > 0) {
       const backup = await p.confirm({
-        message: `Backup ${localMigrations.length} local migration file(s) before pulling?`,
+        message: `Backup ${localDetails.length} local migration file(s) before pulling?`,
         initialValue: true,
       });
       
@@ -349,16 +414,15 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
         const backupDir = resolve(process.cwd(), 'supabase', 'migrations_backup_' + Date.now());
         
         try {
-          const { mkdir } = await import('node:fs/promises');
           await mkdir(backupDir, { recursive: true });
           
-          for (const migration of localMigrations) {
+          for (const migration of localDetails) {
             const content = await readFile(migration.fullPath, 'utf-8');
             await writeFile(join(backupDir, migration.filename), content);
           }
           
           console.log(pc.green('✓'), `Backed up to ${pc.dim(backupDir)}`);
-        } catch (err) {
+        } catch {
           console.log(pc.yellow('⚠'), 'Backup failed, continuing anyway');
         }
       }
@@ -392,6 +456,237 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
   } else {
     console.log();
     console.log(pc.red('✗'), 'Repair failed:', repairResult.error);
+    return { success: false };
+  }
+}
+
+/**
+ * Result of migration rescue operation
+ */
+export interface RescueResult {
+  success: boolean;
+  error?: string;
+  /** Path to the created baseline migration file */
+  baselinePath?: string;
+  /** Remote migrations that were marked as reverted */
+  revertedMigrations: string[];
+}
+
+/**
+ * Rescue migrations for users who applied migrations remotely without local files.
+ * 
+ * This is for the scenario where:
+ * - User applied migrations via MCP/dashboard (no local .sql files)
+ * - Remote has migration history but local has no files
+ * - User wants to start using SupaControl properly
+ * 
+ * Strategy:
+ * 1. Dump the current remote schema as a "baseline" migration
+ * 2. Mark all existing remote migrations as "reverted"
+ * 3. Mark the new baseline as "applied" (schema already exists on remote)
+ * 
+ * After rescue:
+ * - Local has a single migration file representing the full schema
+ * - Remote history shows only this baseline as applied
+ * - Future migrations work normally
+ */
+export async function rescueMigrations(
+  remoteMigrations: string[]
+): Promise<RescueResult> {
+  const result: RescueResult = {
+    success: false,
+    revertedMigrations: [],
+  };
+
+  const spinner = p.spinner();
+  const migrationsDir = resolve(process.cwd(), 'supabase', 'migrations');
+
+  // Step 1: Ensure migrations directory exists
+  try {
+    await mkdir(migrationsDir, { recursive: true });
+  } catch {
+    // Already exists, that's fine
+  }
+
+  // Step 2: Dump current schema from remote
+  spinner.start('Dumping current schema from remote...');
+  
+  const timestamp = generateMigrationTimestamp();
+  const baselineFilename = `${timestamp}_baseline.sql`;
+  const baselinePath = join(migrationsDir, baselineFilename);
+  
+  const dumpResult = await runSupabase(
+    ['db', 'dump', '--linked', '-f', baselinePath],
+    { stream: false }
+  );
+  
+  if (!dumpResult.success) {
+    spinner.stop('Schema dump failed');
+    result.error = 'Failed to dump remote schema';
+    return result;
+  }
+  
+  spinner.stop('Schema dumped');
+  
+  // Step 3: Add a header comment to the baseline file
+  try {
+    const content = await readFile(baselinePath, 'utf-8');
+    const header = [
+      '-- Baseline migration generated by SupaControl',
+      '-- This captures the full schema from remote at the time of rescue',
+      `-- Generated: ${new Date().toISOString()}`,
+      `-- Replaces remote migrations: ${remoteMigrations.join(', ')}`,
+      '--',
+      '',
+    ].join('\n');
+    await writeFile(baselinePath, header + content);
+  } catch {
+    // If we can't add the header, that's okay
+  }
+  
+  console.log(pc.green('✓'), `Created baseline: ${pc.dim(baselineFilename)}`);
+
+  // Step 4: Mark all existing remote migrations as reverted
+  if (remoteMigrations.length > 0) {
+    spinner.start('Clearing remote migration history...');
+    
+    for (const version of remoteMigrations) {
+      const repairResult = await runSupabase(
+        ['migration', 'repair', '--status', 'reverted', version],
+        { stream: false }
+      );
+      
+      if (!repairResult.success) {
+        spinner.stop('Failed to clear history');
+        result.error = `Failed to revert migration ${version}`;
+        return result;
+      }
+      
+      result.revertedMigrations.push(version);
+    }
+    
+    spinner.stop(`Cleared ${remoteMigrations.length} remote migration(s)`);
+  }
+
+  // Step 5: Mark the baseline as applied (schema already exists on remote)
+  spinner.start('Recording baseline in remote history...');
+  
+  const applyResult = await runSupabase(
+    ['migration', 'repair', '--status', 'applied', timestamp],
+    { stream: false }
+  );
+  
+  if (!applyResult.success) {
+    spinner.stop('Failed to record baseline');
+    result.error = 'Failed to mark baseline as applied';
+    return result;
+  }
+  
+  spinner.stop('Baseline recorded');
+
+  result.success = true;
+  result.baselinePath = baselinePath;
+  return result;
+}
+
+/**
+ * Interactive rescue flow for users with remote-only migrations.
+ * 
+ * Detects when remote has migrations but local has no files, and offers
+ * to create a baseline migration from the current schema.
+ */
+export async function interactiveMigrationRescue(): Promise<{ success: boolean; cancelled?: boolean; rescued?: boolean }> {
+  const status = await checkMigrationSync();
+  
+  if (status.error) {
+    console.log(pc.yellow('⚠'), 'Could not check migration status');
+    console.log(pc.dim(`  ${status.error}`));
+    return { success: true };
+  }
+
+  // Check if this is a rescue scenario:
+  // - Remote has migrations
+  // - Local has NO migrations (or very few compared to remote)
+  const localMigrations = await getLocalMigrations();
+  const localCount = localMigrations.length;
+  const remoteOnlyCount = status.remoteMissing.length;
+  
+  // Not a rescue scenario if local has migrations or remote has none
+  if (remoteOnlyCount === 0 || localCount >= remoteOnlyCount) {
+    return { success: true };
+  }
+
+  // This looks like a rescue scenario
+  console.log();
+  p.note(
+    [
+      `${pc.red('⚠ Migration rescue needed')}`,
+      '',
+      `Found ${pc.yellow(remoteOnlyCount.toString())} remote migration(s) with no local files:`,
+      ...status.remoteMissing.map(m => pc.dim(`  • ${m}`)),
+      '',
+      pc.bold('Why this matters:'),
+      '  If you run `db reset`, these migrations will be lost because',
+      '  there are no local .sql files to replay.',
+      '',
+      pc.bold('How this happens:'),
+      '  • Migrations applied via Supabase MCP without saving files',
+      '  • Migrations applied directly in Dashboard',
+      '  • Starting SupaControl on an existing project',
+    ].join('\n'),
+    'Remote-Only Migrations Detected'
+  );
+
+  const choice = await p.select({
+    message: 'How would you like to handle this?',
+    options: [
+      {
+        value: 'rescue',
+        label: 'Create baseline from current schema',
+        hint: 'Recommended - captures everything in one migration file',
+      },
+      {
+        value: 'ignore',
+        label: 'Ignore and continue',
+        hint: 'Risk: schema may be lost on reset',
+      },
+      {
+        value: 'cancel',
+        label: pc.dim('Cancel'),
+        hint: 'Abort and handle manually',
+      },
+    ],
+  });
+
+  if (p.isCancel(choice) || choice === 'cancel') {
+    return { success: false, cancelled: true };
+  }
+
+  if (choice === 'ignore') {
+    console.log(pc.yellow('⚠'), 'Proceeding without rescue. Be careful with db reset!');
+    return { success: true };
+  }
+
+  // Rescue flow
+  console.log();
+  console.log(pc.blue('→'), 'Starting migration rescue...');
+  console.log();
+
+  const rescueResult = await rescueMigrations(status.remoteMissing);
+  
+  if (rescueResult.success) {
+    console.log();
+    console.log(pc.green('✓'), 'Migration rescue complete!');
+    console.log();
+    console.log('Your schema is now captured in a local migration file.');
+    console.log('Future migrations will work normally from this baseline.');
+    console.log();
+    console.log(pc.dim(`Baseline: ${rescueResult.baselinePath}`));
+    
+    return { success: true, rescued: true };
+  } else {
+    console.log();
+    console.log(pc.red('✗'), 'Rescue failed:', rescueResult.error);
     return { success: false };
   }
 }
