@@ -849,7 +849,12 @@ async function selectProjectFromList(
       initialValue: true,
     });
 
-    if (p.isCancel(skipConfirm) || skipConfirm) {
+    if (p.isCancel(skipConfirm)) {
+      p.cancel('Setup cancelled');
+      process.exit(0);
+    }
+
+    if (skipConfirm) {
       return null;
     }
 
@@ -889,7 +894,12 @@ async function selectProjectFromList(
     options,
   });
 
-  if (p.isCancel(selected) || selected === '__skip__') {
+  if (p.isCancel(selected)) {
+    p.cancel('Setup cancelled');
+    process.exit(0);
+  }
+
+  if (selected === '__skip__') {
     return null;
   }
 
