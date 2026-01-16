@@ -7,7 +7,7 @@ import { type GlobalOptions, program, withErrorHandling } from '../index.js';
 import { configExists, writeConfig } from '../config/writer.js';
 import type { Config } from '../config/schema.js';
 import { getOrPromptForToken, getAccessToken } from '../auth/credentials.js';
-import { createSupabaseClient, type Project } from '../api/supabase-client.js';
+import { createSupabaseClient, type Project, type Branch, type SupabaseManagementClient } from '../api/supabase-client.js';
 import { displayProjectSummary } from '../api/project-selector.js';
 
 /**
@@ -96,6 +96,457 @@ function showBranchingTip(): void {
 }
 
 /**
+ * Result of the branching gate check
+ */
+type BranchingGateResult = 
+  | { canProceed: true; useBranching: false }
+  | { canProceed: true; useBranching: true; parentProject: Project; branches: Branch[] }
+  | { canProceed: false };
+
+/**
+ * Check if user can set up staging + production with their current resources.
+ * This gate runs BEFORE environment selection when user picks "Local + Staging + Production".
+ * 
+ * ALWAYS offers the choice between separate projects or branching.
+ */
+async function checkBranchingGate(
+  client: SupabaseManagementClient,
+  projects: Project[]
+): Promise<BranchingGateResult> {
+  // No projects at all
+  if (projects.length === 0) {
+    p.note(
+      [
+        `${pc.red('No Supabase projects found in your account.')}`,
+        '',
+        'To set up staging + production environments, you need either:',
+        '',
+        `${pc.cyan('1.')} Two separate Supabase projects`,
+        `   ${pc.dim('Create projects at: https://supabase.com/dashboard/projects')}`,
+        '',
+        `${pc.cyan('2.')} One project with Supabase Branching enabled (Pro plan)`,
+        `   ${pc.dim('Your main project = production')}`,
+        `   ${pc.dim('A branch = staging')}`,
+        `   ${pc.dim('Learn more: https://supabase.com/docs/guides/platform/branching')}`,
+      ].join('\n'),
+      `${pc.yellow('⚠')} Cannot set up staging + production`
+    );
+
+    const fallback = await p.select({
+      message: 'What would you like to do?',
+      options: [
+        { value: 'local-staging', label: 'Continue with Local + Staging only', hint: 'Single remote environment' },
+        { value: 'local', label: 'Continue with Local only', hint: 'No remote environments' },
+        { value: 'cancel', label: 'Cancel setup', hint: 'Create projects first' },
+      ],
+    });
+
+    if (p.isCancel(fallback) || fallback === 'cancel') {
+      p.cancel('Setup cancelled');
+      process.exit(0);
+    }
+
+    return { canProceed: false };
+  }
+
+  // Check which projects have REAL branching capability
+  // This does a proper preflight check, not just trusting is_branch_enabled
+  const spinner = p.spinner();
+  spinner.start('Checking branching capability...');
+
+  const projectsWithBranching: Array<{ project: Project; branches: Branch[] }> = [];
+  
+  for (const project of projects) {
+    // Only check active projects
+    if (project.status !== 'ACTIVE_HEALTHY') {
+      continue;
+    }
+    
+    const capability = await client.checkBranchingCapability(project);
+    
+    if (capability.available) {
+      projectsWithBranching.push({ 
+        project, 
+        branches: capability.branches,
+      });
+    }
+  }
+
+  spinner.stop(
+    projectsWithBranching.length > 0
+      ? `Found ${projectsWithBranching.length} project${projectsWithBranching.length > 1 ? 's' : ''} with branching`
+      : 'No projects with branching capability'
+  );
+
+  // Build the choice prompt
+  console.log();
+  
+  const hasMultipleProjects = projects.length >= 2;
+  const hasBranchingProjects = projectsWithBranching.length > 0;
+
+  // Always show the strategy selection
+  type StrategyChoice = 'separate-projects' | 'use-branching' | 'cancel';
+  
+  const strategyOptions: Array<{ value: StrategyChoice; label: string; hint: string }> = [];
+
+  if (hasMultipleProjects) {
+    strategyOptions.push({
+      value: 'separate-projects',
+      label: `Use separate Supabase projects (${projects.length} available)`,
+      hint: 'Each environment uses its own project',
+    });
+  }
+
+  if (hasBranchingProjects) {
+    const branchingCount = projectsWithBranching.length;
+    strategyOptions.push({
+      value: 'use-branching',
+      label: `Use Supabase Branching (${branchingCount} project${branchingCount > 1 ? 's' : ''} with branching)`,
+      hint: 'Main project = production, branch = staging',
+    });
+  }
+
+  // If neither option is available
+  if (strategyOptions.length === 0) {
+    const project = projects[0];
+    p.note(
+      [
+        `${pc.yellow('⚠')} You have 1 project without branching enabled.`,
+        '',
+        `Project: ${pc.cyan(project.name)}`,
+        '',
+        'To set up staging + production, you need either:',
+        '',
+        `${pc.cyan('1.')} Enable Supabase Branching (Pro plan required)`,
+        `   ${pc.dim(`https://supabase.com/dashboard/project/${project.id}/settings/general`)}`,
+        `   → Main project = production`,
+        `   → Branch = staging`,
+        '',
+        `${pc.cyan('2.')} Create a second Supabase project`,
+        `   ${pc.dim('https://supabase.com/dashboard/projects')}`,
+      ].join('\n'),
+      'Additional Setup Required'
+    );
+
+    const choice = await p.select({
+      message: 'What would you like to do?',
+      options: [
+        { value: 'open-branching', label: 'Open branching settings in browser', hint: 'Enable branching, then re-run init' },
+        { value: 'open-projects', label: 'Open Supabase dashboard to create project', hint: 'Create second project, then re-run init' },
+        { value: 'local-staging', label: 'Continue with Local + Staging only', hint: 'Use single project for staging' },
+        { value: 'cancel', label: 'Cancel setup' },
+      ],
+    });
+
+    if (p.isCancel(choice) || choice === 'cancel') {
+      p.cancel('Setup cancelled');
+      process.exit(0);
+    }
+
+    if (choice === 'open-branching') {
+      const url = `https://supabase.com/dashboard/project/${project.id}/settings/general`;
+      console.log();
+      console.log(pc.cyan('→'), `Open this URL to enable branching:`);
+      console.log(pc.dim(`  ${url}`));
+      console.log();
+      console.log(pc.dim('After enabling branching, run `supacontrol init` again.'));
+      process.exit(0);
+    }
+
+    if (choice === 'open-projects') {
+      const url = 'https://supabase.com/dashboard/projects';
+      console.log();
+      console.log(pc.cyan('→'), `Open this URL to create a new project:`);
+      console.log(pc.dim(`  ${url}`));
+      console.log();
+      console.log(pc.dim('After creating a project, run `supacontrol init` again.'));
+      process.exit(0);
+    }
+
+    return { canProceed: false };
+  }
+
+  strategyOptions.push({
+    value: 'cancel',
+    label: pc.dim('Cancel setup'),
+    hint: '',
+  });
+
+  // Show strategy selection
+  p.note(
+    [
+      'You selected Local + Staging + Production.',
+      '',
+      `${pc.bold('Separate projects:')} Each environment uses its own Supabase project.`,
+      `${pc.dim('  Best for: Complete isolation between environments')}`,
+      '',
+      `${pc.bold('Supabase Branching:')} Production uses main project, staging uses a branch.`,
+      `${pc.dim('  Best for: Easier schema sync, single billing, team workflows')}`,
+    ].join('\n'),
+    'Environment Strategy'
+  );
+
+  const strategy = await p.select({
+    message: 'How would you like to configure your environments?',
+    options: strategyOptions,
+  });
+
+  if (p.isCancel(strategy) || strategy === 'cancel') {
+    p.cancel('Setup cancelled');
+    process.exit(0);
+  }
+
+  if (strategy === 'use-branching') {
+    // Let user pick which project to use for branching (if multiple have it)
+    let selectedBranchingProject = projectsWithBranching[0];
+
+    if (projectsWithBranching.length > 1) {
+      const projectChoice = await p.select({
+        message: 'Which project should be your production environment?',
+        options: projectsWithBranching.map(({ project, branches }) => ({
+          value: project.id,
+          label: `${project.name} ${pc.dim(`(${project.region})`)} ${pc.green('[Active]')}`,
+          hint: branches.length > 0 ? `${branches.length} existing branch${branches.length > 1 ? 'es' : ''}` : 'No branches yet',
+        })),
+      });
+
+      if (p.isCancel(projectChoice)) {
+        p.cancel('Setup cancelled');
+        process.exit(0);
+      }
+
+      selectedBranchingProject = projectsWithBranching.find(p => p.project.id === projectChoice)!;
+    }
+
+    return {
+      canProceed: true,
+      useBranching: true,
+      parentProject: selectedBranchingProject.project,
+      branches: selectedBranchingProject.branches,
+    };
+  }
+
+  // User chose separate projects
+  return { canProceed: true, useBranching: false };
+}
+
+/**
+ * Select or create a branch for staging environment
+ * 
+ * Handles three scenarios:
+ * 1. No non-default branches exist → Create "staging" automatically
+ * 2. One non-default branch exists → Ask user if they want to use it or create new
+ * 3. Multiple non-default branches → Let user choose which one to use or create new
+ */
+async function selectOrCreateBranch(
+  client: SupabaseManagementClient,
+  parentProject: Project,
+  existingBranches: Branch[]
+): Promise<string> {
+  // Get non-default branches (these are the actual "feature" branches)
+  const nonDefaultBranches = existingBranches.filter((b) => !b.is_default);
+  
+  // Check if a "staging" branch already exists
+  const existingStagingBranch = nonDefaultBranches.find(
+    (b) => b.name.toLowerCase() === 'staging'
+  );
+
+  // SCENARIO 1: No non-default branches - create "staging" automatically
+  if (nonDefaultBranches.length === 0) {
+    console.log(pc.dim('No existing branches found. Creating "staging" branch...'));
+    return createNewBranch(client, parentProject, existingBranches, 'staging');
+  }
+
+  // SCENARIO 2: Exactly one non-default branch - ask user about it
+  if (nonDefaultBranches.length === 1) {
+    const branch = nonDefaultBranches[0];
+    const isStagingNamed = branch.name.toLowerCase() === 'staging';
+    
+    console.log(pc.green('✓'), `Found existing branch: "${branch.name}"`);
+    
+    // Show branch details
+    p.note(
+      [
+        `${pc.bold('Branch details:')}`,
+        `  Name: ${pc.cyan(branch.name)}`,
+        `  Ref: ${pc.dim(branch.project_ref)}`,
+        `  Status: ${branch.status}`,
+        '',
+        isStagingNamed 
+          ? pc.dim('This branch is named "staging" - likely intended for staging environment.')
+          : pc.yellow('This branch has a custom name. Please confirm its intended use.'),
+      ].join('\n'),
+      'Existing Branch Found'
+    );
+
+    const choice = await p.select({
+      message: `What would you like to do with this branch?`,
+      options: [
+        { 
+          value: 'use', 
+          label: `Use "${branch.name}" as staging environment`,
+          hint: isStagingNamed ? 'Recommended' : undefined,
+        },
+        { 
+          value: 'create', 
+          label: 'Create a new "staging" branch instead',
+          hint: 'This branch may be for another purpose',
+        },
+        { 
+          value: 'cancel', 
+          label: pc.dim('Cancel setup'),
+          hint: 'Let me check this first',
+        },
+      ],
+    });
+
+    if (p.isCancel(choice) || choice === 'cancel') {
+      p.cancel('Setup cancelled');
+      process.exit(0);
+    }
+
+    if (choice === 'use') {
+      return branch.project_ref;
+    }
+
+    // User chose to create a new branch
+    const suggestedName = existingStagingBranch ? 'staging-env' : 'staging';
+    return createNewBranch(client, parentProject, existingBranches, suggestedName);
+  }
+
+  // SCENARIO 3: Multiple non-default branches - let user choose
+  console.log(pc.green('✓'), `Found ${nonDefaultBranches.length} existing branches`);
+  
+  p.note(
+    [
+      `${pc.bold('Existing branches:')}`,
+      ...nonDefaultBranches.map((b) => `  • ${b.name} ${pc.dim(`(ref: ${b.project_ref})`)}`),
+      '',
+      pc.yellow('Please select which branch to use for staging, or create a new one.'),
+    ].join('\n'),
+    'Multiple Branches Found'
+  );
+
+  const options: Array<{ value: string; label: string; hint?: string }> = [];
+
+  // Add existing branches - prioritize "staging" if it exists
+  const sortedBranches = [...nonDefaultBranches].sort((a, b) => {
+    // Put "staging" first
+    if (a.name.toLowerCase() === 'staging') return -1;
+    if (b.name.toLowerCase() === 'staging') return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  for (const branch of sortedBranches) {
+    const isStagingNamed = branch.name.toLowerCase() === 'staging';
+    options.push({
+      value: branch.project_ref,
+      label: `"${branch.name}"`,
+      hint: isStagingNamed ? 'Recommended - named "staging"' : `ref: ${branch.project_ref}`,
+    });
+  }
+
+  // Add create new branch option
+  options.push({
+    value: '__create__',
+    label: pc.cyan('+ Create a new branch'),
+    hint: 'Creates a new branch for staging',
+  });
+
+  // Add cancel option
+  options.push({
+    value: '__cancel__',
+    label: pc.dim('Cancel setup'),
+    hint: 'Let me check these branches first',
+  });
+
+  const selected = await p.select({
+    message: 'Select a branch for staging environment:',
+    options,
+  });
+
+  if (p.isCancel(selected) || selected === '__cancel__') {
+    p.cancel('Setup cancelled');
+    process.exit(0);
+  }
+
+  if (selected === '__create__') {
+    const suggestedName = existingStagingBranch ? 'staging-env' : 'staging';
+    return createNewBranch(client, parentProject, existingBranches, suggestedName);
+  }
+
+  return selected as string;
+}
+
+/**
+ * Create a new branch for staging environment
+ */
+async function createNewBranch(
+  client: SupabaseManagementClient,
+  parentProject: Project,
+  existingBranches: Branch[],
+  suggestedName: string
+): Promise<string> {
+  const branchName = await p.text({
+    message: 'Enter a name for the new branch:',
+    placeholder: suggestedName,
+    defaultValue: suggestedName,
+    validate: (value) => {
+      if (!value || value.trim().length === 0) {
+        return 'Branch name is required';
+      }
+      if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+        return 'Branch name can only contain letters, numbers, hyphens, and underscores';
+      }
+      if (existingBranches.some((b) => b.name.toLowerCase() === value.toLowerCase())) {
+        return 'A branch with this name already exists';
+      }
+      return undefined;
+    },
+  });
+
+  if (p.isCancel(branchName)) {
+    p.cancel('Setup cancelled');
+    process.exit(0);
+  }
+
+  const spinner = p.spinner();
+  spinner.start(`Creating branch "${branchName}"...`);
+
+  try {
+    const newBranch = await client.createBranch(parentProject.id, branchName as string);
+
+    if (!newBranch) {
+      spinner.stop('Failed to create branch');
+      p.cancel('Could not parse branch response. Please try again.');
+      process.exit(1);
+    }
+
+    spinner.stop(`Branch "${branchName}" created`);
+    console.log(pc.green('✓'), `Branch ref: ${pc.dim(newBranch.project_ref)}`);
+
+    return newBranch.project_ref;
+  } catch (error) {
+    spinner.stop('Failed to create branch');
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(pc.red('✗'), errorMessage);
+    
+    // Provide helpful guidance based on common errors
+    if (errorMessage.includes('branch limit') || errorMessage.includes('limit')) {
+      console.log();
+      console.log(pc.yellow('This may be a plan limitation:'));
+      console.log(pc.dim('  • Check your branch limit at:'));
+      console.log(pc.dim(`    https://supabase.com/dashboard/project/${parentProject.id}/settings/general`));
+    }
+    
+    console.log();
+    p.cancel('Could not create branch.');
+    process.exit(1);
+  }
+}
+
+/**
  * Show next steps after init
  */
 function showNextSteps(preset: EnvPreset): void {
@@ -153,7 +604,7 @@ async function initAction(): Promise<void> {
   }
 
   // Step 3: Ask about environment setup
-  const preset = await p.select({
+  let preset = await p.select({
     message: 'How many environments do you need?',
     options: [
       { value: 'local' as EnvPreset, ...ENV_PRESETS.local },
@@ -171,6 +622,7 @@ async function initAction(): Promise<void> {
   }
 
   const projectRefs: Record<string, string | undefined> = {};
+  let branchingContext: { parentProject: Project; branches: Branch[] } | null = null;
 
   // Step 4: If remote environments, get access token and fetch projects
   if (preset !== 'local') {
@@ -196,7 +648,6 @@ async function initAction(): Promise<void> {
     }
 
     // Create API client and validate token
-    // At this point, token is guaranteed to be non-null (exit paths above)
     const client = createSupabaseClient(token as string);
 
     const spinner = p.spinner();
@@ -214,38 +665,86 @@ async function initAction(): Promise<void> {
     // Fetch projects once
     const projects = await client.getProjects();
 
-    // Step 5: Select projects for each environment
-    const envsToSetup = preset === 'local-staging' ? ['staging'] : ['staging', 'production'];
+    // Step 4.5: BRANCHING GATE - Check if user can set up staging + production
+    if (preset === 'local-staging-production') {
+      const gateResult = await checkBranchingGate(client, projects);
 
-    for (const envName of envsToSetup) {
-      console.log();
-      console.log(pc.bold(`Configure ${pc.cyan(envName)} environment:`));
+      if (!gateResult.canProceed) {
+        // User chose to downgrade to local-staging or local
+        // Re-prompt for their choice
+        const fallbackPreset = await p.select({
+          message: 'Continue with a different setup?',
+          options: [
+            { value: 'local-staging' as EnvPreset, label: 'Local + Staging', hint: 'Single remote environment' },
+            { value: 'local' as EnvPreset, label: 'Local only', hint: 'No remote environments' },
+            { value: 'cancel', label: 'Cancel setup' },
+          ],
+        });
 
-      if (projects.length === 0) {
-        console.log(pc.yellow('⚠'), 'No projects found in your account');
-        console.log(pc.dim('  You can add the project_ref manually to supacontrol.toml'));
-        continue;
-      }
-
-      // Get list of already-selected project refs to exclude
-      const alreadySelectedRefs = Object.values(projectRefs).filter(
-        (ref): ref is string => ref !== undefined
-      );
-
-      const selectedRef = await selectProjectFromList(projects, envName, alreadySelectedRefs);
-      if (selectedRef) {
-        projectRefs[envName] = selectedRef;
-        const project = projects.find((p) => p.id === selectedRef);
-        if (project) {
-          displayProjectSummary(project);
+        if (p.isCancel(fallbackPreset) || fallbackPreset === 'cancel') {
+          p.cancel('Setup cancelled');
+          process.exit(0);
         }
-      } else {
-        console.log(pc.dim(`  Skipped - configure ${envName}.project_ref in supacontrol.toml`));
+
+        preset = fallbackPreset as EnvPreset;
+      } else if (gateResult.useBranching) {
+        // User wants to use branching
+        branchingContext = {
+          parentProject: gateResult.parentProject,
+          branches: gateResult.branches,
+        };
       }
     }
 
-    // Show branching tip
-    showBranchingTip();
+    // Step 5: Select projects/branches for each environment
+    if (preset === 'local-staging-production' && branchingContext) {
+      // BRANCHING FLOW: main project = production, branch = staging
+      console.log();
+      console.log(pc.bold(`Configure ${pc.cyan('production')} environment:`));
+      console.log(pc.green('✓'), `Using main project: ${pc.cyan(branchingContext.parentProject.name)}`);
+      projectRefs['production'] = branchingContext.parentProject.id;
+      displayProjectSummary(branchingContext.parentProject);
+
+      console.log();
+      console.log(pc.bold(`Configure ${pc.cyan('staging')} environment:`));
+      const stagingRef = await selectOrCreateBranch(client, branchingContext.parentProject, branchingContext.branches);
+      projectRefs['staging'] = stagingRef;
+    } else if (preset !== 'local') {
+      // STANDARD FLOW: select separate projects
+      const envsToSetup = preset === 'local-staging' ? ['staging'] : ['production', 'staging'];
+
+      for (const envName of envsToSetup) {
+        console.log();
+        console.log(pc.bold(`Configure ${pc.cyan(envName)} environment:`));
+
+        if (projects.length === 0) {
+          console.log(pc.yellow('⚠'), 'No projects found in your account');
+          console.log(pc.dim('  You can add the project_ref manually to supacontrol.toml'));
+          continue;
+        }
+
+        // Get list of already-selected project refs to exclude
+        const alreadySelectedRefs = Object.values(projectRefs).filter(
+          (ref): ref is string => ref !== undefined
+        );
+
+        const selectedRef = await selectProjectFromList(projects, envName, alreadySelectedRefs);
+        if (selectedRef) {
+          projectRefs[envName] = selectedRef;
+          const project = projects.find((proj) => proj.id === selectedRef);
+          if (project) {
+            displayProjectSummary(project);
+          }
+        } else {
+          console.log(pc.dim(`  Skipped - configure ${envName}.project_ref in supacontrol.toml`));
+        }
+      }
+    }
+
+    // Show branching tip only if they didn't use branching
+    if (!branchingContext) {
+      showBranchingTip();
+    }
   }
 
   // Step 6: Generate and write config

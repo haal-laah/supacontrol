@@ -1,10 +1,10 @@
 import { Command } from 'commander';
 import pc from 'picocolors';
 import { loadConfigOrExit } from '../config/loader.js';
-import { resolveEnvironment, getEnvironmentByName } from '../config/resolver.js';
+import { resolveEnvironmentByProjectRef, getEnvironmentByName } from '../config/resolver.js';
 import { getCurrentBranch, hasUncommittedChanges, clearGitCache } from '../utils/git.js';
 import { runSupabase, requireSupabaseCLI } from '../utils/supabase.js';
-import { runGuards, buildGuardContext, clearProjectCache } from '../guards/index.js';
+import { runGuards, buildGuardContext, clearProjectCache, getCurrentLinkedProject } from '../guards/index.js';
 import type { GlobalOptions } from '../index.js';
 
 interface PushOptions extends GlobalOptions {
@@ -50,9 +50,10 @@ async function runPush(options: PushOptions): Promise<void> {
   const gitBranch = await getCurrentBranch();
   const uncommittedChanges = await hasUncommittedChanges();
 
-  // Resolve environment
+  // Resolve environment from linked project (not git branch)
   let resolved;
   if (options.env) {
+    // Explicit --env flag takes precedence
     resolved = getEnvironmentByName(options.env, config);
     if (!resolved) {
       console.error(pc.red('\u2717'), `Environment '${options.env}' not found in config`);
@@ -60,10 +61,19 @@ async function runPush(options: PushOptions): Promise<void> {
       process.exit(1);
     }
   } else {
-    resolved = resolveEnvironment(gitBranch, config);
+    // Resolve from currently linked Supabase project
+    const linkedRef = await getCurrentLinkedProject();
+    if (!linkedRef) {
+      console.error(pc.red('\u2717'), 'No Supabase project linked');
+      console.error(pc.dim('  Run: supacontrol switch <environment>'));
+      process.exit(1);
+    }
+    
+    resolved = resolveEnvironmentByProjectRef(linkedRef, config);
     if (!resolved) {
-      console.error(pc.red('\u2717'), 'Could not determine target environment');
-      console.error(pc.dim('  Use -e/--env flag to specify environment'));
+      console.error(pc.red('\u2717'), 'Linked project is not configured in supacontrol.toml');
+      console.error(pc.dim(`  Linked to: ${linkedRef}`));
+      console.error(pc.dim('  Run: supacontrol init or add this project to your config'));
       process.exit(1);
     }
   }

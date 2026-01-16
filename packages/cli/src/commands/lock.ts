@@ -2,10 +2,11 @@ import { Command } from 'commander';
 import pc from 'picocolors';
 import * as p from '@clack/prompts';
 import { loadConfig, loadConfigOrExit } from '../config/loader.js';
-import { resolveEnvironment, getEnvironmentByName, listEnvironments } from '../config/resolver.js';
+import { resolveEnvironmentByProjectRef, getEnvironmentByName, listEnvironments } from '../config/resolver.js';
 import { isEnvironmentLocked } from '../config/schema.js';
 import { writeConfig } from '../config/writer.js';
 import { getCurrentBranch, clearGitCache } from '../utils/git.js';
+import { getCurrentLinkedProject, clearProjectCache } from '../guards/project-guard.js';
 import type { GlobalOptions } from '../index.js';
 
 /**
@@ -157,12 +158,21 @@ async function resolveTargetEnvironment(
     return envName;
   }
 
-  // Resolve from current branch
-  const gitBranch = await getCurrentBranch();
-  const resolved = resolveEnvironment(gitBranch, config);
+  // Resolve from linked project
+  clearProjectCache();
+  const linkedRef = await getCurrentLinkedProject();
+  
+  if (!linkedRef) {
+    console.error(pc.red('\u2717'), 'No Supabase project linked');
+    console.error(pc.dim('  Specify environment: supacontrol lock <environment>'));
+    console.error(pc.dim('  Or run: supacontrol switch <environment>'));
+    return null;
+  }
+  
+  const resolved = resolveEnvironmentByProjectRef(linkedRef, config);
 
   if (!resolved) {
-    console.error(pc.red('\u2717'), 'Could not determine target environment');
+    console.error(pc.red('\u2717'), 'Linked project is not configured in supacontrol.toml');
     console.error(pc.dim('  Specify environment: supacontrol lock <environment>'));
     return null;
   }

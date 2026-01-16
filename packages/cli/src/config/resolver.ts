@@ -152,3 +152,38 @@ export function listEnvironments(config: Config): string[] {
 export function hasEnvironment(envName: string, config: Config): boolean {
   return envName in config.environments;
 }
+
+/**
+ * Resolve which environment a project ref belongs to
+ * 
+ * This is the PRIMARY way to determine active environment - based on what
+ * Supabase project/branch is currently linked, not the git branch.
+ *
+ * @param linkedRef - Currently linked Supabase project ref
+ * @param config - Parsed supacontrol config
+ * @returns Resolved environment, or null if no match found
+ */
+export function resolveEnvironmentByProjectRef(
+  linkedRef: string | null,
+  config: Config
+): ResolvedEnvironment | null {
+  if (!linkedRef) {
+    return null;
+  }
+
+  const environments = Object.entries(config.environments);
+
+  for (const [name, env] of environments) {
+    if (!env) continue;
+    if (env.project_ref === linkedRef) {
+      return {
+        name,
+        config: env,
+        projectRef: env.project_ref,
+        matchType: 'exact',
+      };
+    }
+  }
+
+  return null;
+}
