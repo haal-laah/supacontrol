@@ -58,29 +58,38 @@ async function getLocalMigrations(): Promise<string[]> {
 async function getRemoteMigrations(): Promise<string[]> {
   const result = await runSupabase(['migration', 'list'], { stream: false });
   
-  if (!result.success || !result.output) {
+  if (!result.success || !result.stdout) {
     return [];
   }
   
   // Parse migration list output
-  // Format is typically:
-  //   LOCAL | REMOTE | TIME (UTC)
-  //   -------|--------|------------
-  //   ...    | ...    | ...
-  const lines = result.output.split('\n');
+  // Format is:
+  //   Local          | Remote         | Time (UTC)
+  //   ----------------|----------------|---------------------
+  //   20260116000044 | 20260116000044 | 2026-01-16 00:00:44   <- Both
+  //                  | 20260116082525 | 2026-01-16 08:25:25   <- Remote only
+  //   20260116123456 |                | 2026-01-16 12:34:56   <- Local only
+  //
+  // We need to parse the REMOTE column specifically (second column)
+  
+  const lines = result.stdout.split('\n');
   const migrations: string[] = [];
   
   for (const line of lines) {
     // Skip header/separator lines
-    if (line.includes('LOCAL') || line.includes('---') || !line.trim()) {
+    if (line.includes('Local') || line.includes('---') || !line.trim()) {
       continue;
     }
     
-    // Parse the timestamp from the line
-    // Looking for patterns like "20260116054129" (timestamp format)
-    const match = line.match(/(\d{14})/);
-    if (match) {
-      migrations.push(match[1]);
+    // Split by | to get columns
+    const parts = line.split('|');
+    if (parts.length >= 2) {
+      // Remote column is the second one (index 1)
+      const remoteCol = parts[1].trim();
+      const match = remoteCol.match(/^(\d{14})$/);
+      if (match) {
+        migrations.push(match[1]);
+      }
     }
   }
   
@@ -348,15 +357,9 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
     options.push({
       value: 'rescue',
       label: 'Create baseline from current schema',
-      hint: 'Captures remote schema in a local file, then clears history',
+      hint: 'Captures full remote schema in a local file',
     });
   }
-
-  options.push({
-    value: 'pull',
-    label: 'Pull from remote instead',
-    hint: 'Replaces local migrations with remote state',
-  });
 
   options.push({
     value: 'cancel',
@@ -389,53 +392,6 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
     } else {
       console.log();
       console.log(pc.red('✗'), 'Rescue failed:', rescueResult.error);
-      return { success: false };
-    }
-  }
-
-  if (choice === 'pull') {
-    console.log();
-    console.log(pc.blue('→'), 'Pulling migrations from remote...');
-    
-    // First, backup local migrations
-    const localDetails = await getLocalMigrationDetails();
-    if (localDetails.length > 0) {
-      const backup = await p.confirm({
-        message: `Backup ${localDetails.length} local migration file(s) before pulling?`,
-        initialValue: true,
-      });
-      
-      if (p.isCancel(backup)) {
-        return { success: false, cancelled: true };
-      }
-      
-      if (backup) {
-        const migrationsDir = resolve(process.cwd(), 'supabase', 'migrations');
-        const backupDir = resolve(process.cwd(), 'supabase', 'migrations_backup_' + Date.now());
-        
-        try {
-          await mkdir(backupDir, { recursive: true });
-          
-          for (const migration of localDetails) {
-            const content = await readFile(migration.fullPath, 'utf-8');
-            await writeFile(join(backupDir, migration.filename), content);
-          }
-          
-          console.log(pc.green('✓'), `Backed up to ${pc.dim(backupDir)}`);
-        } catch {
-          console.log(pc.yellow('⚠'), 'Backup failed, continuing anyway');
-        }
-      }
-    }
-    
-    // Pull from remote
-    const pullResult = await runSupabase(['db', 'pull'], { stream: true });
-    
-    if (pullResult.success) {
-      console.log(pc.green('✓'), 'Pulled migrations from remote');
-      return { success: true };
-    } else {
-      console.log(pc.red('✗'), 'Pull failed');
       return { success: false };
     }
   }
