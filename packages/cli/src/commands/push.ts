@@ -124,14 +124,33 @@ async function runPush(options: PushOptions): Promise<void> {
     }
   }
 
-  // Show migration diff if configured
+  // Show migration diff if configured (but suppress the verbose output)
   if (config.settings.show_migration_diff && !options.dryRun) {
     console.log(pc.blue('\u2192'), 'Checking for pending migrations...');
-    console.log();
 
-    const diffResult = await runSupabase(['db', 'diff'], { stream: true });
-    if (!diffResult.success && diffResult.exitCode !== 0) {
-      console.log(pc.dim('  No pending migrations or diff unavailable'));
+    // Run diff without streaming to capture output
+    const diffResult = await runSupabase(['db', 'diff'], { stream: false });
+    
+    if (diffResult.success && diffResult.stdout) {
+      // Check if there are actual schema changes (not just noise)
+      const hasChanges = diffResult.stdout.trim().length > 0;
+      if (hasChanges) {
+        // Count the types of changes for a summary
+        const lines = diffResult.stdout.split('\n');
+        const createCount = lines.filter(l => l.trim().startsWith('create ')).length;
+        const alterCount = lines.filter(l => l.trim().startsWith('alter ')).length;
+        const dropCount = lines.filter(l => l.trim().startsWith('drop ')).length;
+        
+        if (createCount > 0 || alterCount > 0 || dropCount > 0) {
+          console.log(pc.dim(`  Found schema differences: ${createCount} create, ${alterCount} alter, ${dropCount} drop`));
+        } else {
+          console.log(pc.dim('  Schema is in sync'));
+        }
+      } else {
+        console.log(pc.dim('  No pending schema changes'));
+      }
+    } else {
+      console.log(pc.dim('  Could not check for schema changes'));
     }
     console.log();
   }
@@ -146,11 +165,11 @@ async function runPush(options: PushOptions): Promise<void> {
     return;
   }
 
-  // Execute push
+  // Execute push with --yes to auto-confirm (we already did our own confirmation via guards)
   console.log(pc.blue('\u2192'), 'Pushing migrations to', pc.cyan(resolved.name));
   console.log();
 
-  const result = await runSupabase(['db', 'push'], { stream: true });
+  const result = await runSupabase(['db', 'push', '--yes'], { stream: true });
 
   if (result.success) {
     console.log();

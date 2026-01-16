@@ -286,6 +286,15 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
     return { success: true };
   }
 
+  // NORMAL CASE: Local has new migrations to push, but no conflicts
+  // This is NOT a mismatch - just new work ready to push
+  if (status.remoteMissing.length === 0 && status.localMissing.length > 0) {
+    // All remote migrations exist locally, we just have new local ones
+    // This is the normal "push new migrations" flow - let it proceed
+    console.log(pc.blue('→'), `${status.localMissing.length} new migration(s) ready to push`);
+    return { success: true };
+  }
+
   // Check if this is a rescue scenario (remote has migrations, local has few/none)
   const localMigrations = await getLocalMigrations();
   const isRescueScenario = status.remoteMissing.length > 0 && 
@@ -298,7 +307,8 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
     return rescueResult;
   }
 
-  // Show the mismatch details
+  // TRUE MISMATCH: Remote has migrations we don't have locally
+  // This requires user decision
   console.log();
   console.log(pc.yellow('⚠'), 'Migration history mismatch detected');
   console.log();
@@ -338,37 +348,76 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
   repairExplanation.push('');
   repairExplanation.push(pc.dim('After repair, your local migrations become the source of truth.'));
   
-  p.note(repairExplanation.join('\n'), 'Repair Option');
+  // Show explanations for each option before the menu
+  // "Save remote schema" is recommended when remote has migrations (safer choice)
+  // "Repair" is only recommended when there are NO remote migrations to lose
+  const hasRemoteMigrations = status.remoteMissing.length > 0;
+  const hasLocalMigrations = status.localMissing.length > 0;
+  
+  const explanations: string[] = [];
+  let optionNum = 1;
+
+  if (hasRemoteMigrations) {
+    const isRecommended = true; // Always recommend saving remote schema when remote has work
+    explanations.push(
+      pc.bold(pc.green(`① Save remote schema to a local file`)) + (isRecommended ? ' ' + pc.green('(Recommended)') : ''),
+      pc.dim('   Downloads your current database structure and saves it as a migration file.'),
+      pc.dim('   This protects your tables, indexes, and other changes from being lost.'),
+      pc.dim('   Use this if you made changes via dashboard, MCP, or other tools.'),
+      ''
+    );
+    optionNum++;
+  }
+
+  if (hasLocalMigrations) {
+    // Only recommend repair if there are NO remote migrations to lose
+    const isRecommended = !hasRemoteMigrations;
+    explanations.push(
+      pc.bold(isRecommended ? pc.green(`${optionNum === 1 ? '①' : '②'} Repair migration history`) : pc.yellow(`② Repair migration history`)) + 
+        (isRecommended ? ' ' + pc.green('(Recommended)') : ' ' + pc.yellow('(Use with caution)')),
+      pc.dim('   Pushes your local migration files to the remote database.'),
+      hasRemoteMigrations 
+        ? pc.dim('   ' + pc.yellow('⚠ Warning: Remote-only migrations will be forgotten/lost.'))
+        : pc.dim('   Remote-only migrations will be cleared from history.'),
+      pc.dim('   Your local files become the single source of truth.'),
+      ''
+    );
+  }
+
+  p.note(explanations.join('\n'), 'Your Options');
 
   // Build options based on the scenario
+  // Order: Rescue first (if applicable) since it's safer, then Repair
   const options: Array<{ value: string; label: string; hint: string }> = [];
 
-  // If we have local migrations to keep, repair is the main option
-  if (status.localMissing.length > 0) {
+  // If remote has migrations, offer rescue FIRST (it's the safer option)
+  if (hasRemoteMigrations) {
     options.push({
-      value: 'repair',
-      label: 'Repair migration history',
-      hint: 'Recommended - keeps your local migrations, forgets remote-only ones',
+      value: 'rescue',
+      label: 'Save remote schema to a local file',
+      hint: 'Recommended - protects your database work',
     });
   }
 
-  // If remote has migrations we don't have locally, offer rescue
-  if (status.remoteMissing.length > 0) {
+  // If we have local migrations, offer repair
+  if (hasLocalMigrations) {
     options.push({
-      value: 'rescue',
-      label: 'Create baseline from current schema',
-      hint: 'Captures full remote schema in a local file',
+      value: 'repair',
+      label: 'Repair migration history',
+      hint: hasRemoteMigrations 
+        ? 'Caution - will forget remote-only migrations'
+        : 'Push your local files to remote',
     });
   }
 
   options.push({
     value: 'cancel',
     label: pc.dim('Cancel'),
-    hint: 'Abort and fix manually',
+    hint: 'I\'ll fix this manually',
   });
 
   const choice = await p.select({
-    message: 'How would you like to resolve this?',
+    message: 'What would you like to do?',
     options,
   });
 
@@ -464,10 +513,25 @@ export async function rescueMigrations(
     // Already exists, that's fine
   }
 
-  // Step 2: Dump current schema from remote
-  spinner.start('Dumping current schema from remote...');
+  // Step 2: Determine baseline timestamp
+  // If there are existing local migrations, the baseline should come BEFORE them
+  // (since it represents the pre-existing remote state)
+  const localMigrations = await getLocalMigrationDetails();
+  let timestamp: string;
   
-  const timestamp = generateMigrationTimestamp();
+  if (localMigrations.length > 0) {
+    // Get the earliest local migration timestamp and subtract 1 second
+    const earliestLocal = localMigrations[0].timestamp;
+    const earliestNum = parseInt(earliestLocal, 10);
+    timestamp = String(earliestNum - 1).padStart(14, '0');
+  } else {
+    // No local migrations, use current time
+    timestamp = generateMigrationTimestamp();
+  }
+
+  // Step 3: Dump current schema from remote
+  spinner.start('Saving remote schema...');
+  
   const baselineFilename = `${timestamp}_baseline.sql`;
   const baselinePath = join(migrationsDir, baselineFilename);
   
@@ -477,14 +541,14 @@ export async function rescueMigrations(
   );
   
   if (!dumpResult.success) {
-    spinner.stop('Schema dump failed');
+    spinner.stop('Failed to save schema');
     result.error = 'Failed to dump remote schema';
     return result;
   }
   
-  spinner.stop('Schema dumped');
+  spinner.stop('Schema saved');
   
-  // Step 3: Add a header comment to the baseline file
+  // Step 4: Add a header comment to the baseline file
   try {
     const content = await readFile(baselinePath, 'utf-8');
     const header = [
@@ -502,7 +566,7 @@ export async function rescueMigrations(
   
   console.log(pc.green('✓'), `Created baseline: ${pc.dim(baselineFilename)}`);
 
-  // Step 4: Mark all existing remote migrations as reverted
+  // Step 5: Mark all existing remote migrations as reverted
   if (remoteMigrations.length > 0) {
     spinner.start('Clearing remote migration history...');
     
@@ -524,7 +588,7 @@ export async function rescueMigrations(
     spinner.stop(`Cleared ${remoteMigrations.length} remote migration(s)`);
   }
 
-  // Step 5: Mark the baseline as applied (schema already exists on remote)
+  // Step 6: Mark the baseline as applied (schema already exists on remote)
   spinner.start('Recording baseline in remote history...');
   
   const applyResult = await runSupabase(
@@ -576,40 +640,52 @@ export async function interactiveMigrationRescue(): Promise<{ success: boolean; 
   console.log();
   p.note(
     [
-      `${pc.red('⚠ Migration rescue needed')}`,
+      `${pc.yellow('Your database has changes that aren\'t saved locally.')}`,
       '',
-      `Found ${pc.yellow(remoteOnlyCount.toString())} remote migration(s) with no local files:`,
-      ...status.remoteMissing.map(m => pc.dim(`  • ${m}`)),
+      `Found ${pc.bold(remoteOnlyCount.toString())} migration(s) on the remote database`,
+      `but no matching files in your local ${pc.dim('supabase/migrations/')} folder.`,
       '',
       pc.bold('Why this matters:'),
-      '  If you run `db reset`, these migrations will be lost because',
-      '  there are no local .sql files to replay.',
+      '  If you ever reset your database, those changes will be lost',
+      '  because there\'s no local file to rebuild from.',
       '',
-      pc.bold('How this happens:'),
-      '  • Migrations applied via Supabase MCP without saving files',
-      '  • Migrations applied directly in Dashboard',
-      '  • Starting SupaControl on an existing project',
+      pc.bold('How did this happen?'),
+      '  • Changes made via Supabase MCP or dashboard',
+      '  • Migration files weren\'t saved locally',
+      '  • Starting fresh with SupaControl on an existing project',
     ].join('\n'),
-    'Remote-Only Migrations Detected'
+    'No Local Migration Files'
+  );
+
+  // Show what we recommend
+  p.note(
+    [
+      pc.bold(pc.green('Save your database schema locally')) + ' ' + pc.green('(Recommended)'),
+      '',
+      pc.dim('We\'ll download your current database structure and save it as a'),
+      pc.dim('migration file. This way, if you ever need to reset, your tables,'),
+      pc.dim('indexes, and other changes will be preserved.'),
+    ].join('\n'),
+    'Recommended Action'
   );
 
   const choice = await p.select({
-    message: 'How would you like to handle this?',
+    message: 'What would you like to do?',
     options: [
       {
         value: 'rescue',
-        label: 'Create baseline from current schema',
-        hint: 'Recommended - captures everything in one migration file',
+        label: 'Save my database schema locally',
+        hint: 'Creates a migration file to protect your work',
       },
       {
         value: 'ignore',
-        label: 'Ignore and continue',
-        hint: 'Risk: schema may be lost on reset',
+        label: 'Skip for now',
+        hint: 'Continue without saving (not recommended)',
       },
       {
         value: 'cancel',
         label: pc.dim('Cancel'),
-        hint: 'Abort and handle manually',
+        hint: 'I\'ll handle this manually',
       },
     ],
   });

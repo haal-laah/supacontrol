@@ -7,7 +7,7 @@ import { getCurrentBranch, hasUncommittedChanges } from '../utils/git.js';
 import { getCurrentLinkedProject } from '../guards/project-guard.js';
 import { isSupabaseCLIInstalled, getSupabaseVersion } from '../utils/supabase.js';
 import { getAccessToken } from '../auth/credentials.js';
-import { createSupabaseClient, type Project, type Branch } from '../api/supabase-client.js';
+import { createSupabaseClient, type Project } from '../api/supabase-client.js';
 
 /**
  * Create the status command

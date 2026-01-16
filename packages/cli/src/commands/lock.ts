@@ -5,7 +5,7 @@ import { loadConfig, loadConfigOrExit } from '../config/loader.js';
 import { resolveEnvironmentByProjectRef, getEnvironmentByName, listEnvironments } from '../config/resolver.js';
 import { isEnvironmentLocked } from '../config/schema.js';
 import { writeConfig } from '../config/writer.js';
-import { getCurrentBranch, clearGitCache } from '../utils/git.js';
+import { clearGitCache } from '../utils/git.js';
 import { getCurrentLinkedProject, clearProjectCache } from '../guards/project-guard.js';
 import type { GlobalOptions } from '../index.js';
 
