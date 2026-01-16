@@ -5,6 +5,7 @@ import { resolveEnvironmentByProjectRef, getEnvironmentByName } from '../config/
 import { getCurrentBranch, hasUncommittedChanges, clearGitCache } from '../utils/git.js';
 import { runSupabase, requireSupabaseCLI } from '../utils/supabase.js';
 import { runGuards, buildGuardContext, clearProjectCache, getCurrentLinkedProject } from '../guards/index.js';
+import { ensureMigrationSync } from '../utils/migrations.js';
 import type { GlobalOptions } from '../index.js';
 
 interface PushOptions extends GlobalOptions {
@@ -106,6 +107,16 @@ async function runPush(options: PushOptions): Promise<void> {
     // In CI mode with confirmation needed, require --i-know-what-im-doing
     if (options.ci && guardResult.requiresConfirmation && !options.iKnowWhatImDoing) {
       console.error(pc.red('\u2717'), 'CI mode requires --i-know-what-im-doing flag for this operation');
+      process.exit(1);
+    }
+  }
+
+  // Check migration sync before pushing
+  if (!options.force) {
+    const inSync = await ensureMigrationSync();
+    if (!inSync) {
+      console.log();
+      console.log(pc.dim('Use --force to push anyway (not recommended)'));
       process.exit(1);
     }
   }

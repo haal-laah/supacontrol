@@ -1,9 +1,11 @@
 import { Command } from 'commander';
 import pc from 'picocolors';
+import * as p from '@clack/prompts';
 import { loadConfigOrExit } from '../config/loader.js';
 import { getEnvironmentByName, listEnvironments } from '../config/resolver.js';
 import { runSupabase, requireSupabaseCLI } from '../utils/supabase.js';
 import { getCurrentLinkedProject, clearProjectCache } from '../guards/project-guard.js';
+import { checkMigrationSync, syncMigrations } from '../utils/migrations.js';
 
 /**
  * Create the switch command
@@ -97,10 +99,57 @@ async function runSwitch(envName: string): Promise<void> {
     console.log();
     console.log(pc.green('\u2713'), `Linked to ${pc.cyan(resolved.projectRef)}`);
     console.log(pc.dim(`  Environment: ${envName}`));
+    
+    // Check if we need to sync migrations
+    console.log();
+    await checkAndSyncMigrations();
   } else {
     console.log();
     console.error(pc.red('\u2717'), 'Failed to link to project');
     console.error(pc.dim('  Make sure you are logged in: supabase login'));
     process.exit(result.exitCode);
+  }
+}
+
+/**
+ * Check if remote has migrations we don't have locally, and offer to sync
+ */
+async function checkAndSyncMigrations(): Promise<void> {
+  const syncStatus = await checkMigrationSync();
+  
+  if (syncStatus.needsSync && syncStatus.remoteMissing.length > 0) {
+    console.log(pc.yellow('⚠'), `Remote has ${syncStatus.remoteMissing.length} migration(s) not in local`);
+    
+    for (const migration of syncStatus.remoteMissing) {
+      console.log(pc.dim(`  - ${migration}`));
+    }
+    
+    console.log();
+    const shouldSync = await p.confirm({
+      message: 'Pull remote migrations to sync local state?',
+      initialValue: true,
+    });
+    
+    if (p.isCancel(shouldSync)) {
+      return;
+    }
+    
+    if (shouldSync) {
+      const success = await syncMigrations();
+      if (success) {
+        console.log(pc.green('✓'), 'Migrations synced');
+      } else {
+        console.log(pc.yellow('⚠'), 'Migration sync had issues - check output above');
+      }
+    } else {
+      console.log(pc.dim('Skipped migration sync'));
+      console.log(pc.dim('  Run `supabase db pull` manually to sync later'));
+    }
+  } else if (syncStatus.localMissing.length > 0) {
+    // Local has migrations not on remote - this is normal, they need to push
+    console.log(pc.blue('→'), `You have ${syncStatus.localMissing.length} local migration(s) to push`);
+    console.log(pc.dim('  Run `spc push` when ready'));
+  } else {
+    console.log(pc.green('✓'), 'Migrations are in sync');
   }
 }

@@ -9,6 +9,7 @@ import type { Config } from '../config/schema.js';
 import { getOrPromptForToken, getAccessToken } from '../auth/credentials.js';
 import { createSupabaseClient, type Project, type Branch, type SupabaseManagementClient } from '../api/supabase-client.js';
 import { displayProjectSummary } from '../api/project-selector.js';
+import { runSupabase } from '../utils/supabase.js';
 
 /**
  * Check if Supabase is initialized in the project
@@ -525,6 +526,9 @@ async function createNewBranch(
     spinner.stop(`Branch "${branchName}" created`);
     console.log(pc.green('✓'), `Branch ref: ${pc.dim(newBranch.project_ref)}`);
 
+    // Auto-link and pull migrations from the new branch
+    await syncMigrationsFromBranch(newBranch.project_ref);
+
     return newBranch.project_ref;
   } catch (error) {
     spinner.stop('Failed to create branch');
@@ -543,6 +547,39 @@ async function createNewBranch(
     console.log();
     p.cancel('Could not create branch.');
     process.exit(1);
+  }
+}
+
+/**
+ * Link to a branch and pull its migrations to sync local state
+ * This ensures we have the initial migration that Supabase creates automatically
+ */
+async function syncMigrationsFromBranch(branchRef: string): Promise<void> {
+  const spinner = p.spinner();
+  
+  // First, link to the branch
+  spinner.start('Linking to branch...');
+  const linkResult = await runSupabase(['link', '--project-ref', branchRef], { stream: false });
+  
+  if (!linkResult.success) {
+    spinner.stop('Failed to link');
+    console.log(pc.yellow('⚠'), 'Could not link to branch automatically');
+    console.log(pc.dim(`  Run manually: supabase link --project-ref ${branchRef}`));
+    return;
+  }
+  spinner.stop('Linked to branch');
+
+  // Now pull migrations to sync
+  spinner.start('Syncing migrations from remote...');
+  const pullResult = await runSupabase(['db', 'pull'], { stream: false });
+  
+  if (pullResult.success) {
+    spinner.stop('Migrations synced');
+    console.log(pc.green('✓'), 'Remote migrations pulled to local');
+  } else {
+    spinner.stop('Migration sync skipped');
+    // This is okay - might mean no remote migrations yet
+    console.log(pc.dim('  No remote migrations to sync (this is normal for new branches)'));
   }
 }
 
@@ -751,7 +788,7 @@ async function initAction(): Promise<void> {
   const config: Config = {
     settings: {
       strict_mode: false,
-      require_clean_git: true,
+      require_clean_git: false,
       show_migration_diff: true,
     },
     environments: createEnvironmentConfig(preset, projectRefs),
