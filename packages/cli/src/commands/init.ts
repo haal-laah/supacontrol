@@ -227,7 +227,12 @@ async function initAction(): Promise<void> {
         continue;
       }
 
-      const selectedRef = await selectProjectFromList(projects, envName);
+      // Get list of already-selected project refs to exclude
+      const alreadySelectedRefs = Object.values(projectRefs).filter(
+        (ref): ref is string => ref !== undefined
+      );
+
+      const selectedRef = await selectProjectFromList(projects, envName, alreadySelectedRefs);
       if (selectedRef) {
         projectRefs[envName] = selectedRef;
         const project = projects.find((p) => p.id === selectedRef);
@@ -264,23 +269,78 @@ async function initAction(): Promise<void> {
 
 /**
  * Select a project from the list using @clack/prompts
+ * 
+ * @param projects - List of available projects
+ * @param envName - Environment name being configured
+ * @param alreadySelectedRefs - Project refs already selected for other environments (will be excluded)
  */
 async function selectProjectFromList(
   projects: Project[],
-  envName: string
+  envName: string,
+  alreadySelectedRefs: string[] = []
 ): Promise<string | null> {
-  const sortedProjects = [...projects].sort((a, b) => {
+  // Filter out already-selected projects
+  const availableProjects = projects.filter(
+    (project) => !alreadySelectedRefs.includes(project.id)
+  );
+
+  // Check if we have any projects left after filtering
+  if (availableProjects.length === 0 && alreadySelectedRefs.length > 0) {
+    // All projects are already used - show hard stop
+    p.note(
+      [
+        `${pc.red('All your Supabase projects are already assigned to other environments.')}`,
+        '',
+        'Each environment MUST have a unique project_ref to prevent',
+        'accidentally running operations on the wrong database.',
+        '',
+        `${pc.bold('Options:')}`,
+        '',
+        `${pc.cyan('1.')} Create a new Supabase project for ${envName}:`,
+        `   ${pc.dim('https://supabase.com/dashboard/projects')}`,
+        '',
+        `${pc.cyan('2.')} Use Supabase Branching (recommended for teams):`,
+        `   ${pc.dim('https://supabase.com/docs/guides/platform/branching')}`,
+        `   Branching creates isolated environments from a single project.`,
+        '',
+        `${pc.cyan('3.')} Skip ${envName} for now and configure manually later.`,
+      ].join('\n'),
+      `${pc.yellow('⚠')} No available projects for ${envName}`
+    );
+
+    const skipConfirm = await p.confirm({
+      message: `Skip ${envName} configuration for now?`,
+      initialValue: true,
+    });
+
+    if (p.isCancel(skipConfirm) || skipConfirm) {
+      return null;
+    }
+
+    // User said no to skipping - cancel setup entirely
+    p.cancel('Setup cancelled - create additional projects and try again');
+    process.exit(0);
+  }
+
+  const sortedProjects = [...availableProjects].sort((a, b) => {
     if (a.status === 'ACTIVE_HEALTHY' && b.status !== 'ACTIVE_HEALTHY') return -1;
     if (b.status === 'ACTIVE_HEALTHY' && a.status !== 'ACTIVE_HEALTHY') return 1;
     return a.name.localeCompare(b.name);
   });
 
   const options = [
-    ...sortedProjects.map((project) => ({
-      value: project.id,
-      label: `${project.status === 'ACTIVE_HEALTHY' ? pc.green('●') : pc.yellow('○')} ${project.name} ${pc.dim(`(${project.region})`)}`,
-      hint: `ref: ${project.id}`,
-    })),
+    ...sortedProjects.map((project) => {
+      const statusLabel = project.status === 'ACTIVE_HEALTHY'
+        ? pc.green('[Active]')
+        : project.status === 'PAUSED'
+          ? pc.yellow('[Paused]')
+          : pc.red(`[${project.status}]`);
+      return {
+        value: project.id,
+        label: `${project.name} ${pc.dim(`(${project.region})`)} ${statusLabel}`,
+        hint: `ref: ${project.id}`,
+      };
+    }),
     {
       value: '__skip__',
       label: pc.dim('Skip (configure manually later)'),

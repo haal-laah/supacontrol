@@ -34,3 +34,7 @@ pnpm-debug.log*
 
 # Supabase local
 supabase/.temp/
+
+# Local testing playground (not part of package)
+playground/
+screenshots/

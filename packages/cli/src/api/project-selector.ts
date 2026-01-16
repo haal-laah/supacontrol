@@ -18,13 +18,13 @@ function formatDate(dateString: string): string {
  * Format a project for display in the selection list
  */
 function formatProjectLabel(project: Project): string {
-  const status = project.status === 'ACTIVE_HEALTHY' 
-    ? pc.green('●') 
+  const statusLabel = project.status === 'ACTIVE_HEALTHY' 
+    ? pc.green('[Active]') 
     : project.status === 'PAUSED'
-      ? pc.yellow('○')
-      : pc.red('●');
+      ? pc.yellow('[Paused]')
+      : pc.red(`[${project.status}]`);
   
-  return `${status} ${project.name} ${pc.dim(`(${project.region})`)}`;
+  return `${project.name} ${pc.dim(`(${project.region})`)} ${statusLabel}`;
 }
 
 /**
