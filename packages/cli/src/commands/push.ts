@@ -5,7 +5,7 @@ import { resolveEnvironmentByProjectRef, getEnvironmentByName } from '../config/
 import { getCurrentBranch, hasUncommittedChanges, clearGitCache } from '../utils/git.js';
 import { runSupabase, requireSupabaseCLI } from '../utils/supabase.js';
 import { runGuards, buildGuardContext, clearProjectCache, getCurrentLinkedProject } from '../guards/index.js';
-import { ensureMigrationSync } from '../utils/migrations.js';
+import { interactiveMigrationSync } from '../utils/migrations.js';
 import type { GlobalOptions } from '../index.js';
 
 interface PushOptions extends GlobalOptions {
@@ -113,8 +113,11 @@ async function runPush(options: PushOptions): Promise<void> {
 
   // Check migration sync before pushing
   if (!options.force) {
-    const inSync = await ensureMigrationSync();
-    if (!inSync) {
+    const syncResult = await interactiveMigrationSync();
+    if (!syncResult.success) {
+      if (syncResult.cancelled) {
+        process.exit(0);
+      }
       console.log();
       console.log(pc.dim('Use --force to push anyway (not recommended)'));
       process.exit(1);
