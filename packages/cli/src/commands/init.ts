@@ -227,7 +227,11 @@ async function checkBranchingGate(
 
   // If neither option is available
   if (strategyOptions.length === 0) {
-    const firstProject = projects[0]!;
+    const firstProject = projects[0];
+    if (!firstProject) {
+      p.cancel('No projects found.');
+      process.exit(1);
+    }
     p.note(
       [
         `${pc.yellow('⚠')} You have 1 project without branching enabled.`,
@@ -317,7 +321,11 @@ async function checkBranchingGate(
 
   if (strategy === 'use-branching') {
     // Let user pick which project to use for branching (if multiple have it)
-    let selectedBranchingProject = projectsWithBranching[0]!;
+    let selectedBranchingProject = projectsWithBranching[0];
+    if (!selectedBranchingProject) {
+      p.cancel('No projects with branching found.');
+      process.exit(1);
+    }
 
     if (projectsWithBranching.length > 1) {
       const projectChoice = await p.select({
@@ -381,7 +389,11 @@ async function selectOrCreateBranch(
 
   // SCENARIO 2: Exactly one non-default branch - ask user about it
   if (nonDefaultBranches.length === 1) {
-    const singleBranch = nonDefaultBranches[0]!;
+    const singleBranch = nonDefaultBranches[0];
+    if (!singleBranch) {
+      p.cancel('No branches found.');
+      process.exit(1);
+    }
     const isStagingNamed = singleBranch.name.toLowerCase() === 'staging';
     
     console.log(pc.green('✓'), `Found existing branch: "${singleBranch.name}"`);
@@ -408,8 +420,8 @@ async function selectOrCreateBranch(
       value: 'use', 
       label: `Use "${singleBranch.name}" as staging environment`,
     });
-    if (isStagingNamed) {
-      branchOptions[0]!.hint = 'Recommended';
+    if (isStagingNamed && branchOptions[0]) {
+      branchOptions[0].hint = 'Recommended';
     }
     
     branchOptions.push({ 

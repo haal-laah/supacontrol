@@ -914,7 +914,8 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
     console.log();
     
     for (let i = 0; i < conflicts.length; i++) {
-      const conflict = conflicts[i]!;
+      const conflict = conflicts[i];
+      if (!conflict) continue;
       const conflictNum = i + 1;
       const totalConflicts = conflicts.length;
       
