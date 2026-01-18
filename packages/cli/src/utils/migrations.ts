@@ -10,7 +10,7 @@ import { runSupabase } from './supabase.js';
 /**
  * Calculate SHA256 hash of content
  */
-function hashContent(content: string): string {
+export function hashContent(content: string): string {
   return createHash('sha256').update(content).digest('hex').slice(0, 16);
 }
 
@@ -288,7 +288,7 @@ async function _findContentConflicts(
 /**
  * Simple diff: find lines only in local (additions) and only in remote (removals)
  */
-function computeSimpleDiff(localContent: string, remoteContent: string): {
+export function computeSimpleDiff(localContent: string, remoteContent: string): {
   additions: string[];
   removals: string[];
 } {
@@ -418,7 +418,7 @@ async function resolveConflict(conflict: MigrationConflict): Promise<ConflictRes
 /**
  * Generate a timestamp for a new migration
  */
-function generateMigrationTimestamp(): string {
+export function generateMigrationTimestamp(): string {
   const now = new Date();
   return [
     now.getUTCFullYear(),
@@ -914,7 +914,8 @@ export async function interactiveMigrationSync(): Promise<{ success: boolean; ca
     console.log();
     
     for (let i = 0; i < conflicts.length; i++) {
-      const conflict = conflicts[i]!;
+      const conflict = conflicts[i];
+      if (!conflict) continue;
       const conflictNum = i + 1;
       const totalConflicts = conflicts.length;
       
@@ -1061,3 +1062,4 @@ export async function interactiveMigrationRescue(): Promise<{ success: boolean; 
     rescued: result.success,
   };
 }
+
