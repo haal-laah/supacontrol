@@ -2,18 +2,18 @@
 
 > Safety-first CLI wrapper for Supabase with environment guards and confirmation prompts
 
-[![CI](https://github.com/your-org/supacontrol/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/supacontrol/actions/workflows/ci.yml)
+[![CI](https://github.com/haal-laah/supacontrol/actions/workflows/ci.yml/badge.svg)](https://github.com/haal-laah/supacontrol/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/%40supacontrol%2Fcli.svg)](https://www.npmjs.com/package/@supacontrol/cli)
 
 ## Why SupaControl?
 
 The Supabase CLI is powerful but dangerous. One wrong command on the wrong branch can wipe your production database. **SupaControl adds safety guards:**
 
-- 🔒 **Environment locking** - Production locked by default
-- ✅ **Confirmation prompts** - Type environment name to confirm destructive operations
-- 🌿 **Branch-based auto-detection** - Automatically targets the right environment
-- 🛡️ **Project ref validation** - Prevents operating on wrong database
-- 🧹 **Clean git checks** - Requires clean working directory for safety
+- **Environment locking** - Production locked by default
+- **Confirmation prompts** - Type environment name to confirm destructive operations
+- **Branch-based auto-detection** - Automatically targets the right environment
+- **Project ref validation** - Prevents operating on wrong database
+- **Clean git checks** - Requires clean working directory for safety
 
 ## Installation
 
@@ -202,9 +202,13 @@ supacontrol doctor
 ### GitHub Actions
 
 ```yaml
+- name: Install Supabase CLI
+  uses: supabase/setup-cli@v1
+  with:
+    version: latest
+
 - name: Push migrations
-  run: |
-    supacontrol push -e production --ci --i-know-what-im-doing
+  run: supacontrol push -e production --ci
   env:
     SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 ```
@@ -214,8 +218,7 @@ supacontrol doctor
 | Flag | Description |
 |------|-------------|
 | `--ci` | Non-interactive mode |
-| `--i-know-what-im-doing` | Required for protected operations in CI |
-| `-e, --env <name>` | Explicit environment (required in CI) |
+| `-e, --env <name>` | Explicit environment target |
 
 ### Environment Variables
 
@@ -230,10 +233,10 @@ supacontrol doctor
 Production environments are locked by default. Locked environments block ALL destructive operations:
 
 ```
-✗ Environment 'production' is locked
+x Environment 'production' is locked
   Suggestions:
-  • Set 'locked = false' in supacontrol.toml for [environments.production]
-  • Or use --force flag to override (not recommended for production)
+  - Set 'locked = false' in supacontrol.toml for [environments.production]
+  - Or use --force flag to override (not recommended for production)
 ```
 
 ### Operation Guard
@@ -241,7 +244,7 @@ Production environments are locked by default. Locked environments block ALL des
 Protected operations require typing a confirmation word:
 
 ```
-⚠ This will reset the staging database
+! This will reset the staging database
   Type 'staging' to confirm: 
 ```
 
@@ -250,9 +253,9 @@ Protected operations require typing a confirmation word:
 Validates that the linked Supabase project matches the expected environment:
 
 ```
-✗ Project mismatch: linked to 'wrong-project' but 'production' expects 'prod-project'
+x Project mismatch: linked to 'wrong-project' but 'production' expects 'prod-project'
   Suggestions:
-  • Run 'supabase link --project-ref prod-project' to switch
+  - Run 'supabase link --project-ref prod-project' to switch
 ```
 
 ### Git Guard
@@ -260,9 +263,9 @@ Validates that the linked Supabase project matches the expected environment:
 Requires clean git working directory for destructive operations:
 
 ```
-✗ Uncommitted changes detected
+x Uncommitted changes detected
   Suggestions:
-  • Commit or stash your changes before running this command
+  - Commit or stash your changes before running this command
 ```
 
 ## Aliases
@@ -275,29 +278,23 @@ The CLI is available under three names:
 
 ## Contributing
 
+See [CONTRIBUTING.md](https://github.com/haal-laah/supacontrol/blob/develop/CONTRIBUTING.md) for guidelines.
+
 ```bash
 # Clone the repo
-git clone https://github.com/your-org/supacontrol.git
+git clone https://github.com/haal-laah/supacontrol.git
 cd supacontrol
 
 # Install dependencies
 pnpm install
 
 # Run tests
-pnpm --filter @supacontrol/cli test
+pnpm test
 
 # Build
-pnpm --filter @supacontrol/cli build
+pnpm build
 ```
-
-### Test Fixtures
-
-Test fixtures in `tests/fixtures/` are protected by SHA256 checksums. If a test fails:
-
-1. **DO NOT** modify the fixture
-2. **DO** fix the implementation in `src/`
-3. If the expected behavior changed, update fixtures and run `pnpm verify-fixtures --update`
 
 ## License
 
-MIT © [Your Name]
+MIT - see [LICENSE](https://github.com/haal-laah/supacontrol/blob/main/LICENSE) for details.
