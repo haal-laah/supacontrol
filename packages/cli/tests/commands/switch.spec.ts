@@ -100,11 +100,12 @@ describe('Switch Command', () => {
           staging: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
         },
       });
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-        projectRef: 'staging-ref',
-      });
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockGetCurrentLinkedProject.mockResolvedValue('other-ref');
       mockRunSupabase.mockResolvedValue({ success: true, exitCode: 0, stdout: '', stderr: '' });
       mockCheckMigrationSync.mockResolvedValue({ needsSync: false, remoteMissing: [], localMissing: [] });
@@ -126,11 +127,12 @@ describe('Switch Command', () => {
           staging: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
         },
       });
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-        projectRef: 'staging-ref',
-      });
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
 
       const cmd = createSwitchCommand();
@@ -151,11 +153,12 @@ describe('Switch Command', () => {
           local: { project_ref: undefined, git_branches: [], protected_operations: [] },
         },
       });
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'local',
-        config: { project_ref: undefined, git_branches: [], protected_operations: [] },
-        projectRef: undefined,
-      });
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'local',
+         config: { project_ref: undefined, git_branches: [], protected_operations: [] },
+         projectRef: undefined,
+         matchType: 'exact',
+       });
       mockGetCurrentLinkedProject.mockResolvedValue('some-ref');
       mockRunSupabase.mockResolvedValue({ success: true, exitCode: 0, stdout: '', stderr: '' });
 
@@ -174,11 +177,12 @@ describe('Switch Command', () => {
           staging: { project_ref: undefined, git_branches: ['develop'], protected_operations: [] },
         },
       });
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: undefined, git_branches: ['develop'], protected_operations: [] },
-        projectRef: undefined,
-      });
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: undefined, git_branches: ['develop'], protected_operations: [] },
+         projectRef: undefined,
+         matchType: 'exact',
+       });
       mockGetCurrentLinkedProject.mockResolvedValue(null);
 
       const cmd = createSwitchCommand();
@@ -193,11 +197,12 @@ describe('Switch Command', () => {
           staging: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
         },
       });
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-        projectRef: 'staging-ref',
-      });
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockGetCurrentLinkedProject.mockResolvedValue(null);
       mockRunSupabase.mockResolvedValue({ success: false, exitCode: 1, stdout: '', stderr: 'Error' });
 
@@ -213,11 +218,12 @@ describe('Switch Command', () => {
           staging: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
         },
       });
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-        projectRef: 'staging-ref',
-      });
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockGetCurrentLinkedProject.mockResolvedValue(null);
       mockRunSupabase.mockResolvedValue({ success: true, exitCode: 0, stdout: '', stderr: '' });
       mockCheckMigrationSync.mockResolvedValue({ 
@@ -243,11 +249,12 @@ describe('Switch Command', () => {
           staging: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
         },
       });
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-        projectRef: 'staging-ref',
-      });
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockGetCurrentLinkedProject.mockResolvedValue(null);
       mockRunSupabase.mockResolvedValue({ success: true, exitCode: 0, stdout: '', stderr: '' });
       mockCheckMigrationSync.mockResolvedValue({ 
@@ -271,11 +278,12 @@ describe('Switch Command', () => {
           staging: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
         },
       });
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-        projectRef: 'staging-ref',
-      });
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockGetCurrentLinkedProject.mockResolvedValue(null);
       mockRunSupabase.mockResolvedValue({ success: true, exitCode: 0, stdout: '', stderr: '' });
       mockCheckMigrationSync.mockResolvedValue({ 

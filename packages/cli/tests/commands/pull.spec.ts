@@ -131,6 +131,8 @@ describe('Pull Command', () => {
       mockResolveEnvironmentByProjectRef.mockReturnValue({
         name: 'staging',
         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+        projectRef: 'staging-ref',
+        matchType: 'exact' as const,
       });
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: true, cancelled: false });
@@ -153,10 +155,12 @@ describe('Pull Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockRunSupabase.mockResolvedValue({ success: true, exitCode: 0, stdout: '', stderr: '' });
 
       const cmd = createPullCommand();
@@ -177,10 +181,12 @@ describe('Pull Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: false, cancelled: false });
 
@@ -199,10 +205,12 @@ describe('Pull Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: false, cancelled: true });
 
@@ -221,10 +229,12 @@ describe('Pull Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: true, cancelled: false });
       mockRunSupabase.mockResolvedValue({ success: false, exitCode: 1, stdout: '', stderr: 'Error' });

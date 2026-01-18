@@ -119,10 +119,12 @@ describe('Status Command', () => {
       };
       mockCreateSupabaseClient.mockReturnValue(mockClient as any);
       
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: ['reset'] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: ['reset'] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
@@ -193,10 +195,12 @@ describe('Status Command', () => {
       });
       mockGetCurrentLinkedProject.mockResolvedValue('prod-ref');
       mockGetAccessToken.mockResolvedValue(null);
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'production',
-        config: { project_ref: 'prod-ref', git_branches: ['main'], protected_operations: ['push', 'reset'], locked: true },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'production',
+         config: { project_ref: 'prod-ref', git_branches: ['main'], protected_operations: ['push', 'reset'], locked: true },
+         projectRef: 'prod-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(true);
       mockGetCurrentBranch.mockResolvedValue('main');
       mockHasUncommittedChanges.mockResolvedValue(false);
@@ -297,10 +301,12 @@ describe('Status Command', () => {
       });
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
       mockGetAccessToken.mockResolvedValue(null);
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockImplementation((name) => name === 'production');
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
