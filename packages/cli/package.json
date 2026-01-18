@@ -20,8 +20,8 @@
     "dist",
     "README.md"
   ],
-  "engines": {
-    "node": ">=18"
+"engines": {
+    "node": ">=20"
   },
   "scripts": {
     "build": "tsup",
