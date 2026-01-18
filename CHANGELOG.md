@@ -52,4 +52,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Confirmation prompts for destructive operations
 - Project reference validation prevents wrong-database operations
 
-[0.1.0]: https://github.com/supacontrol/supacontrol/releases/tag/v0.1.0
+[0.1.0]: https://github.com/haal-laah/supacontrol/releases/tag/v0.1.0

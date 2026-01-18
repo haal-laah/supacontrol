@@ -15,6 +15,11 @@ The Supabase CLI is powerful but dangerous. One wrong command on the wrong branc
 - **Project ref validation** - Prevents operating on wrong database
 - **Clean git checks** - Requires clean working directory for safety
 
+## Prerequisites
+
+- **Node.js 20+** - [Download](https://nodejs.org/)
+- **Supabase CLI** - [Installation Guide](https://supabase.com/docs/guides/cli/getting-started)
+
 ## Installation
 
 ```bash
