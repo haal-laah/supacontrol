@@ -3,7 +3,6 @@
 > Safety-first CLI wrapper for Supabase with environment guards and confirmation prompts
 
 [![CI](https://github.com/haal-laah/supacontrol/actions/workflows/ci.yml/badge.svg)](https://github.com/haal-laah/supacontrol/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/%40supacontrol%2Fcli.svg)](https://www.npmjs.com/package/@supacontrol/cli)
 
 ## Why SupaControl?
 
