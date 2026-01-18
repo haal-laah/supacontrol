@@ -3,7 +3,6 @@
 > Safety-first CLI wrapper for Supabase with environment guards and confirmation prompts
 
 [![CI](https://github.com/haal-laah/supacontrol/actions/workflows/ci.yml/badge.svg)](https://github.com/haal-laah/supacontrol/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/%40supacontrol%2Fcli.svg)](https://www.npmjs.com/package/@supacontrol/cli)
 
 ## Why SupaControl?
 
@@ -14,6 +13,11 @@ The Supabase CLI is powerful but dangerous. One wrong command on the wrong branc
 - **Branch-based auto-detection** - Automatically targets the right environment
 - **Project ref validation** - Prevents operating on wrong database
 - **Clean git checks** - Requires clean working directory for safety
+
+## Prerequisites
+
+- **Node.js 20+** - [Download](https://nodejs.org/)
+- **Supabase CLI** - [Installation Guide](https://supabase.com/docs/guides/cli/getting-started)
 
 ## Installation
 

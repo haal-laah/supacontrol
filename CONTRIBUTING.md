@@ -10,7 +10,7 @@ Be respectful and constructive. We're all here to build something useful.
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - pnpm 9+
 - Supabase CLI (for integration testing)
 - Git
@@ -19,7 +19,7 @@ Be respectful and constructive. We're all here to build something useful.
 
 ```bash
 # Clone the repository
-git clone https://github.com/supacontrol/supacontrol.git
+git clone https://github.com/haal-laah/supacontrol.git
 cd supacontrol
 
 # Install dependencies

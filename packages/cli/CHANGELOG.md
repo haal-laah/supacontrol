@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 122 tests covering config, guards, and integration
   - Protected test fixtures with SHA256 checksums
   - ESLint + Prettier configuration
-  - GitHub Actions CI pipeline (Node 18/20)
+  - GitHub Actions CI pipeline (Node 20/22)
 
 ### Security
 
@@ -51,4 +51,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Double confirmation required for destructive operations
 - `--i-know-what-im-doing` flag required for production in CI mode
 
-[0.1.0]: https://github.com/example/supacontrol/releases/tag/v0.1.0
+[0.1.0]: https://github.com/haal-laah/supacontrol/releases/tag/v0.1.0

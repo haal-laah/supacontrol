@@ -57,7 +57,7 @@ $ supacontrol reset
 
 Before using SupaControl, you need:
 
-1. **Node.js 18+** - [Download](https://nodejs.org/)
+1. **Node.js 20+** - [Download](https://nodejs.org/)
 2. **Supabase CLI** - [Installation Guide](https://supabase.com/docs/guides/cli/getting-started)
    ```bash
    # npm
@@ -421,7 +421,7 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guideline
 
 ```bash
 # Clone the repo
-git clone https://github.com/supacontrol/supacontrol.git
+git clone https://github.com/haal-laah/supacontrol.git
 cd supacontrol
 
 # Install dependencies

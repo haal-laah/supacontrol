@@ -83,7 +83,7 @@ git add .
 git commit -m "feat: initial release v0.1.0"
 
 # Add remote and push
-git remote add origin https://github.com/supacontrol/supacontrol.git
+git remote add origin https://github.com/haal-laah/supacontrol.git
 git push -u origin main --force
 ```
 
@@ -163,7 +163,7 @@ npm version major
 
 ## Creating a GitHub Release
 
-1. Go to https://github.com/supacontrol/supacontrol/releases
+1. Go to https://github.com/haal-laah/supacontrol/releases
 2. Click "Create a new release"
 3. Create a new tag: `v0.1.0`
 4. Title: `v0.1.0 - Initial Release`
