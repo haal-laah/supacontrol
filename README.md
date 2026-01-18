@@ -9,10 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/supacontrol/supacontrol/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/supacontrol/supacontrol/ci.yml?branch=main&style=flat-square&logo=github&label=CI" alt="CI Status"></a>
+  <a href="https://github.com/haal-laah/supacontrol/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/haal-laah/supacontrol/ci.yml?branch=main&style=flat-square&logo=github&label=CI" alt="CI Status"></a>
   <a href="https://www.npmjs.com/package/@supacontrol/cli"><img src="https://img.shields.io/npm/v/@supacontrol/cli?style=flat-square&logo=npm&color=CB3837" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/@supacontrol/cli"><img src="https://img.shields.io/npm/dm/@supacontrol/cli?style=flat-square&logo=npm&color=CB3837" alt="npm downloads"></a>
-  <a href="https://github.com/supacontrol/supacontrol/blob/main/LICENSE"><img src="https://img.shields.io/github/license/supacontrol/supacontrol?style=flat-square" alt="License"></a>
+  <a href="https://github.com/haal-laah/supacontrol/blob/main/LICENSE"><img src="https://img.shields.io/github/license/haal-laah/supacontrol?style=flat-square" alt="License"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/@supacontrol/cli?style=flat-square&logo=node.js&color=339933" alt="Node.js version"></a>
 </p>
 
