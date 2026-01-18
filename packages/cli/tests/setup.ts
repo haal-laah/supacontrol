@@ -5,7 +5,7 @@
  * Use it for global mocks, environment setup, and test utilities.
  */
 
-import { vi } from 'vitest';
+import { vi, beforeEach, afterAll } from 'vitest';
 
 /**
  * Mock process.exit to prevent tests from actually exiting

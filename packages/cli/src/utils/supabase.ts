@@ -52,6 +52,8 @@ export interface RunSupabaseOptions {
   stream?: boolean;
   /** Environment variables to pass */
   env?: Record<string, string>;
+  /** Stdin input to pass to the command */
+  input?: string;
 }
 
 /**
@@ -101,6 +103,7 @@ export async function runSupabase(
       ...(cwd ? { cwd } : {}),
       ...(env ? { env } : {}),
       ...(stream ? { stdio: 'inherit' as const } : {}),
+      ...(options.input ? { input: options.input } : {}),
     };
 
     const result = await execa('supabase', args, execaOptions);

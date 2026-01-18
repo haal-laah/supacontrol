@@ -1,4 +1,4 @@
-import { blocked, allowed, type GuardContext, type GuardResult } from './types.js';
+import { blocked, allowed, DESTRUCTIVE_OPERATIONS, type GuardContext, type GuardResult } from './types.js';
 
 /**
  * Check if git working directory is clean when required
@@ -15,8 +15,7 @@ export function checkCleanGit(context: GuardContext): GuardResult {
   }
 
   // Only check for destructive operations
-  const destructiveOperations = ['push', 'reset', 'seed', 'migrate'];
-  if (!destructiveOperations.includes(operation)) {
+  if (!DESTRUCTIVE_OPERATIONS.includes(operation)) {
     return allowed();
   }
 

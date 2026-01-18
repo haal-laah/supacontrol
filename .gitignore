@@ -1,6 +1,9 @@
 # Beads - internal issue tracking (not for repo consumers)
 .beads/
 
+# Sisyphus - AI agent workspace (not for repo consumers)
+.sisyphus/
+
 # Dependencies
 node_modules/
 
@@ -38,3 +41,18 @@ supabase/.temp/
 # Local testing playground (not part of package)
 playground/
 screenshots/
+
+# Internal docs and notes (not for repo consumers)
+_ignore/
+
+# Research and investigation notes
+supabase_cli_research/
+
+# Code review files
+review.md
+
+# Agent instructions (internal development only)
+AGENTS.md
+
+# Debug scripts (internal development only)
+packages/cli/scripts/debug-*.ts

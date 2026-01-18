@@ -157,19 +157,37 @@ async function checkBranchingGate(
 
   const projectsWithBranching: Array<{ project: Project; branches: Branch[] }> = [];
   
-  for (const project of projects) {
-    // Only check active projects
-    if (project.status !== 'ACTIVE_HEALTHY') {
-      continue;
+  // Filter to active projects only
+  const activeProjects = projects.filter(proj => proj.status === 'ACTIVE_HEALTHY');
+  
+  // Process in batches to avoid rate limiting (120 req/min)
+  const BATCH_SIZE = 10;
+  const BATCH_DELAY_MS = 500;
+  
+  for (let i = 0; i < activeProjects.length; i += BATCH_SIZE) {
+    const batch = activeProjects.slice(i, i + BATCH_SIZE);
+    
+    // Process batch in parallel
+    const results = await Promise.all(
+      batch.map(async (proj) => {
+        const capability = await client.checkBranchingCapability(proj);
+        return { proj, capability };
+      })
+    );
+    
+    // Collect successful results
+    for (const { proj, capability } of results) {
+      if (capability.available) {
+        projectsWithBranching.push({ 
+          project: proj, 
+          branches: capability.branches,
+        });
+      }
     }
     
-    const capability = await client.checkBranchingCapability(project);
-    
-    if (capability.available) {
-      projectsWithBranching.push({ 
-        project, 
-        branches: capability.branches,
-      });
+    // Add delay between batches if more to process (avoid rate limits)
+    if (i + BATCH_SIZE < activeProjects.length) {
+      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
     }
   }
 
@@ -209,17 +227,17 @@ async function checkBranchingGate(
 
   // If neither option is available
   if (strategyOptions.length === 0) {
-    const project = projects[0];
+    const firstProject = projects[0]!;
     p.note(
       [
         `${pc.yellow('⚠')} You have 1 project without branching enabled.`,
         '',
-        `Project: ${pc.cyan(project.name)}`,
+        `Project: ${pc.cyan(firstProject.name)}`,
         '',
         'To set up staging + production, you need either:',
         '',
         `${pc.cyan('1.')} Enable Supabase Branching (Pro plan required)`,
-        `   ${pc.dim(`https://supabase.com/dashboard/project/${project.id}/settings/general`)}`,
+        `   ${pc.dim(`https://supabase.com/dashboard/project/${firstProject.id}/settings/general`)}`,
         `   → Main project = production`,
         `   → Branch = staging`,
         '',
@@ -245,7 +263,7 @@ async function checkBranchingGate(
     }
 
     if (choice === 'open-branching') {
-      const url = `https://supabase.com/dashboard/project/${project.id}/settings/general`;
+      const url = `https://supabase.com/dashboard/project/${firstProject.id}/settings/general`;
       console.log();
       console.log(pc.cyan('→'), `Open this URL to enable branching:`);
       console.log(pc.dim(`  ${url}`));
@@ -299,14 +317,14 @@ async function checkBranchingGate(
 
   if (strategy === 'use-branching') {
     // Let user pick which project to use for branching (if multiple have it)
-    let selectedBranchingProject = projectsWithBranching[0];
+    let selectedBranchingProject = projectsWithBranching[0]!;
 
     if (projectsWithBranching.length > 1) {
       const projectChoice = await p.select({
         message: 'Which project should be your production environment?',
-        options: projectsWithBranching.map(({ project, branches }) => ({
-          value: project.id,
-          label: `${project.name} ${pc.dim(`(${project.region})`)} ${pc.green('[Active]')}`,
+        options: projectsWithBranching.map(({ project: proj, branches }) => ({
+          value: proj.id,
+          label: `${proj.name} ${pc.dim(`(${proj.region})`)} ${pc.green('[Active]')}`,
           hint: branches.length > 0 ? `${branches.length} existing branch${branches.length > 1 ? 'es' : ''}` : 'No branches yet',
         })),
       });
@@ -316,7 +334,10 @@ async function checkBranchingGate(
         process.exit(0);
       }
 
-      selectedBranchingProject = projectsWithBranching.find(p => p.project.id === projectChoice)!;
+      const found = projectsWithBranching.find(item => item.project.id === projectChoice);
+      if (found) {
+        selectedBranchingProject = found;
+      }
     }
 
     return {
@@ -360,18 +381,18 @@ async function selectOrCreateBranch(
 
   // SCENARIO 2: Exactly one non-default branch - ask user about it
   if (nonDefaultBranches.length === 1) {
-    const branch = nonDefaultBranches[0];
-    const isStagingNamed = branch.name.toLowerCase() === 'staging';
+    const singleBranch = nonDefaultBranches[0]!;
+    const isStagingNamed = singleBranch.name.toLowerCase() === 'staging';
     
-    console.log(pc.green('✓'), `Found existing branch: "${branch.name}"`);
+    console.log(pc.green('✓'), `Found existing branch: "${singleBranch.name}"`);
     
     // Show branch details
     p.note(
       [
         `${pc.bold('Branch details:')}`,
-        `  Name: ${pc.cyan(branch.name)}`,
-        `  Ref: ${pc.dim(branch.project_ref)}`,
-        `  Status: ${branch.status}`,
+        `  Name: ${pc.cyan(singleBranch.name)}`,
+        `  Ref: ${pc.dim(singleBranch.project_ref)}`,
+        `  Status: ${singleBranch.status}`,
         '',
         isStagingNamed 
           ? pc.dim('This branch is named "staging" - likely intended for staging environment.')
@@ -380,25 +401,31 @@ async function selectOrCreateBranch(
       'Existing Branch Found'
     );
 
+    type BranchChoice = 'use' | 'create' | 'cancel';
+    const branchOptions: Array<{ value: BranchChoice; label: string; hint?: string }> = [];
+    
+    branchOptions.push({ 
+      value: 'use', 
+      label: `Use "${singleBranch.name}" as staging environment`,
+    });
+    if (isStagingNamed) {
+      branchOptions[0]!.hint = 'Recommended';
+    }
+    
+    branchOptions.push({ 
+      value: 'create', 
+      label: 'Create a new "staging" branch instead',
+      hint: 'This branch may be for another purpose',
+    });
+    branchOptions.push({ 
+      value: 'cancel', 
+      label: pc.dim('Cancel setup'),
+      hint: 'Let me check this first',
+    });
+
     const choice = await p.select({
       message: `What would you like to do with this branch?`,
-      options: [
-        { 
-          value: 'use', 
-          label: `Use "${branch.name}" as staging environment`,
-          hint: isStagingNamed ? 'Recommended' : undefined,
-        },
-        { 
-          value: 'create', 
-          label: 'Create a new "staging" branch instead',
-          hint: 'This branch may be for another purpose',
-        },
-        { 
-          value: 'cancel', 
-          label: pc.dim('Cancel setup'),
-          hint: 'Let me check this first',
-        },
-      ],
+      options: branchOptions,
     });
 
     if (p.isCancel(choice) || choice === 'cancel') {
@@ -407,7 +434,7 @@ async function selectOrCreateBranch(
     }
 
     if (choice === 'use') {
-      return branch.project_ref;
+      return singleBranch.project_ref;
     }
 
     // User chose to create a new branch

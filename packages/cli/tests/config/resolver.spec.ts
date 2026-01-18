@@ -10,6 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   resolveEnvironment,
+  resolveEnvironmentByProjectRef,
   getEnvironmentByName,
   listEnvironments,
   hasEnvironment,
@@ -334,6 +335,93 @@ describe('Environment Resolver', () => {
 
       expect(result).not.toBeNull();
       expect(result!.projectRef).toBeUndefined();
+    });
+  });
+
+  describe('resolveEnvironmentByProjectRef', () => {
+    it('should resolve environment by matching project_ref', () => {
+      const config = createConfig({
+        staging: { project_ref: 'staging-ref-123' },
+        production: { project_ref: 'prod-ref-456' },
+      });
+
+      const result = resolveEnvironmentByProjectRef('staging-ref-123', config);
+
+      expect(result).not.toBeNull();
+      expect(result!.name).toBe('staging');
+      expect(result!.projectRef).toBe('staging-ref-123');
+      expect(result!.matchType).toBe('exact');
+    });
+
+    it('should return null for unknown project_ref', () => {
+      const config = createConfig({
+        staging: { project_ref: 'staging-ref-123' },
+        production: { project_ref: 'prod-ref-456' },
+      });
+
+      const result = resolveEnvironmentByProjectRef('unknown-ref', config);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when linkedRef is null', () => {
+      const config = createConfig({
+        staging: { project_ref: 'staging-ref-123' },
+      });
+
+      const result = resolveEnvironmentByProjectRef(null, config);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return first matching environment when multiple have same ref', () => {
+      // Edge case: multiple environments with same project_ref (shouldn't happen, but test it)
+      const config = createConfig({
+        env1: { project_ref: 'shared-ref' },
+        env2: { project_ref: 'shared-ref' },
+      });
+
+      const result = resolveEnvironmentByProjectRef('shared-ref', config);
+
+      expect(result).not.toBeNull();
+      expect(result!.name).toBe('env1'); // First wins
+    });
+
+    it('should match production environment by project_ref', () => {
+      const config = createConfig({
+        local: { git_branches: [] },
+        staging: { project_ref: 'staging-ref', git_branches: ['staging'] },
+        production: { project_ref: 'prod-ref', git_branches: ['main'] },
+      });
+
+      const result = resolveEnvironmentByProjectRef('prod-ref', config);
+
+      expect(result).not.toBeNull();
+      expect(result!.name).toBe('production');
+    });
+
+    it('should return null for empty environments', () => {
+      const config = createConfig({});
+
+      const result = resolveEnvironmentByProjectRef('any-ref', config);
+
+      expect(result).toBeNull();
+    });
+
+    it('should not match environment without project_ref', () => {
+      const config = createConfig({
+        local: { git_branches: [] }, // No project_ref
+        staging: { project_ref: 'staging-ref' },
+      });
+
+      // local has no project_ref, so it shouldn't match anything
+      const result = resolveEnvironmentByProjectRef('local', config);
+      expect(result).toBeNull();
+
+      // staging has project_ref
+      const stagingResult = resolveEnvironmentByProjectRef('staging-ref', config);
+      expect(stagingResult).not.toBeNull();
+      expect(stagingResult!.name).toBe('staging');
     });
   });
 });

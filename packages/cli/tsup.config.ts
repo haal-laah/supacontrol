@@ -13,4 +13,5 @@ export default defineConfig({
   },
   target: 'node18',
   splitting: false,
+  tsconfig: 'tsconfig.build.json',
 });

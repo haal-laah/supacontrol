@@ -100,13 +100,15 @@ async function runStatus(): Promise<void> {
   let linkedInfo: LinkedInfo | null = null;
   const token = await getAccessToken();
   
+  let apiError = false;
   if (linkedRef && token) {
     try {
       const client = createSupabaseClient(token);
       const projects = await client.getProjects();
       linkedInfo = await resolveLinkedRef(linkedRef, projects, client);
     } catch {
-      // Silently fail - show raw ref
+      // Failed to fetch from API - show raw ref but note the error
+      apiError = true;
     }
   }
 
@@ -202,6 +204,14 @@ async function runStatus(): Promise<void> {
     console.log(pc.dim(`Supabase CLI v${version}`));
   } else {
     console.log(pc.red('Supabase CLI not installed'));
+  }
+  
+  // Show API error hint if we couldn't fetch project details
+  if (apiError) {
+    console.log();
+    console.log(pc.dim('Note: Could not fetch project details from API'));
+    console.log(pc.dim('  Your access token may have expired'));
+    console.log(pc.dim('  Generate a new one: https://supabase.com/dashboard/account/tokens'));
   }
   
   console.log();

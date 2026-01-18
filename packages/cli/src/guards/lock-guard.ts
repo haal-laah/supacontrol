@@ -1,5 +1,5 @@
 import { isEnvironmentLocked } from '../config/schema.js';
-import { blocked, allowed, type GuardContext, type GuardResult } from './types.js';
+import { blocked, allowed, DESTRUCTIVE_OPERATIONS, type GuardContext, type GuardResult } from './types.js';
 
 /**
  * Check if an environment is locked and block destructive operations
@@ -12,8 +12,7 @@ export function checkLock(context: GuardContext): GuardResult {
 
   // Check if this operation type is affected by locks
   // Read-only operations like 'diff' are always allowed
-  const destructiveOperations = ['push', 'reset', 'seed', 'pull', 'migrate'];
-  if (!destructiveOperations.includes(operation)) {
+  if (!DESTRUCTIVE_OPERATIONS.includes(operation)) {
     return allowed();
   }
 

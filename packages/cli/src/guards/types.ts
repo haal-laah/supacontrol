@@ -6,6 +6,18 @@ import type { Config, Environment, ProtectedOperation } from '../config/schema.j
 export type OperationType = ProtectedOperation | 'migrate' | 'diff';
 
 /**
+ * Operations that modify the database and require safety checks.
+ * Used by lock-guard and git-guard to determine which operations to block.
+ */
+export const DESTRUCTIVE_OPERATIONS: readonly OperationType[] = [
+  'push',
+  'reset',
+  'seed',
+  'pull',
+  'migrate',
+] as const;
+
+/**
  * Risk level of an operation in the current context
  */
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
