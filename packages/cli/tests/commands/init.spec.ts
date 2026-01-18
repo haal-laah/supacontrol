@@ -124,7 +124,7 @@ describe('Init Command', () => {
       // User selects local only
       mockSelect.mockResolvedValueOnce('local');
       // Write config succeeds
-      mockWriteConfig.mockResolvedValueOnce(undefined);
+      mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
       const cmd = createInitCommand();
       
@@ -157,7 +157,7 @@ describe('Init Command', () => {
       // User selects local only
       mockSelect.mockResolvedValueOnce('local');
       // Write config succeeds
-      mockWriteConfig.mockResolvedValueOnce(undefined);
+      mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
       const cmd = createInitCommand();
       await cmd.parseAsync(['node', 'init']);
@@ -193,7 +193,7 @@ describe('Init Command', () => {
       // User selects local only
       mockSelect.mockResolvedValueOnce('local');
       // Write config succeeds
-      mockWriteConfig.mockResolvedValueOnce(undefined);
+      mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
       const cmd = createInitCommand();
       await cmd.parseAsync(['node', 'init']);
@@ -231,7 +231,7 @@ describe('Init Command', () => {
       mockSelect.mockResolvedValueOnce('proj-1');
       
       // Write config succeeds
-      mockWriteConfig.mockResolvedValueOnce(undefined);
+      mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
       const cmd = createInitCommand();
       await cmd.parseAsync(['node', 'init']);
@@ -282,7 +282,7 @@ describe('Init Command', () => {
       mockCreateSupabaseClient.mockReturnValue(mockClient as any);
       
       // Skip project selection (no projects)
-      mockWriteConfig.mockResolvedValueOnce(undefined);
+      mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
       const cmd = createInitCommand();
       await cmd.parseAsync(['node', 'init']);
@@ -313,7 +313,7 @@ describe('Init Command', () => {
       };
       mockCreateSupabaseClient.mockReturnValue(mockClient as any);
       
-      mockWriteConfig.mockResolvedValueOnce(undefined);
+      mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
       const cmd = createInitCommand();
       await cmd.parseAsync(['node', 'init']);
@@ -370,7 +370,7 @@ describe('Init Command', () => {
       // User selects local only
       mockSelect.mockResolvedValueOnce('local');
       // Write config succeeds
-      mockWriteConfig.mockResolvedValueOnce(undefined);
+      mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
       const cmd = createInitCommand();
       await cmd.parseAsync(['node', 'init']);
@@ -410,7 +410,7 @@ describe('Init Command', () => {
       // User selects project
       mockSelect.mockResolvedValueOnce('staging-proj');
       
-      mockWriteConfig.mockResolvedValueOnce(undefined);
+      mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
       const cmd = createInitCommand();
       await cmd.parseAsync(['node', 'init']);
@@ -454,7 +454,7 @@ describe('Init Command', () => {
        // User skips project selection
        mockSelect.mockResolvedValueOnce('__skip__');
        
-       mockWriteConfig.mockResolvedValueOnce(undefined);
+       mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
        const cmd = createInitCommand();
        await cmd.parseAsync(['node', 'init']);
@@ -489,7 +489,7 @@ describe('Init Command', () => {
        };
        mockCreateSupabaseClient.mockReturnValue(mockClient as any);
        
-       mockWriteConfig.mockResolvedValueOnce(undefined);
+       mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
        const cmd = createInitCommand();
        await cmd.parseAsync(['node', 'init']);
@@ -523,7 +523,7 @@ describe('Init Command', () => {
        // User confirms fallback
        mockSelect.mockResolvedValueOnce('local-staging');
        
-       mockWriteConfig.mockResolvedValueOnce(undefined);
+       mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
        const cmd = createInitCommand();
        await cmd.parseAsync(['node', 'init']);
@@ -565,7 +565,7 @@ describe('Init Command', () => {
        // User selects staging project
        mockSelect.mockResolvedValueOnce('proj-3');
        
-       mockWriteConfig.mockResolvedValueOnce(undefined);
+       mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
        const cmd = createInitCommand();
        await cmd.parseAsync(['node', 'init']);
@@ -624,7 +624,7 @@ describe('Init Command', () => {
        // User confirms skip for staging (all projects used)
        mockConfirm.mockResolvedValueOnce(true);
        
-       mockWriteConfig.mockResolvedValueOnce(undefined);
+       mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
        const cmd = createInitCommand();
        await cmd.parseAsync(['node', 'init']);
@@ -657,7 +657,7 @@ describe('Init Command', () => {
        // User selects project
        mockSelect.mockResolvedValueOnce('staging-proj');
        
-       mockWriteConfig.mockResolvedValueOnce(undefined);
+       mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
        const cmd = createInitCommand();
        await cmd.parseAsync(['node', 'init']);
@@ -700,7 +700,7 @@ describe('Init Command', () => {
        // User selects staging project
        mockSelect.mockResolvedValueOnce('staging-proj');
        
-       mockWriteConfig.mockResolvedValueOnce(undefined);
+       mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
        const cmd = createInitCommand();
        await cmd.parseAsync(['node', 'init']);
@@ -741,7 +741,7 @@ describe('Init Command', () => {
        // User selects active project
        mockSelect.mockResolvedValueOnce('active-proj');
        
-       mockWriteConfig.mockResolvedValueOnce(undefined);
+       mockWriteConfig.mockResolvedValueOnce('supacontrol.toml');
 
        const cmd = createInitCommand();
        await cmd.parseAsync(['node', 'init']);

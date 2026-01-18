@@ -1290,15 +1290,15 @@ describe('Supabase Management API Client', () => {
       }
     });
 
-    it('should handle non-JSON error responses', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        json: async () => {
-          throw new Error('Not JSON');
-        },
-      } as Response);
+     it('should handle non-JSON error responses', async () => {
+       mockFetch.mockResolvedValueOnce({
+         ok: false,
+         status: 500,
+         statusText: 'Internal Server Error',
+         json: async () => {
+           throw new Error('Not JSON');
+         },
+       } as unknown as Response);
 
       const client = new SupabaseManagementClient('token');
 

@@ -216,14 +216,14 @@ describe('Credentials Management', () => {
        expect(p.note).toHaveBeenCalled();
      });
 
-     it('should return null when user cancels prompt', async () => {
-       vi.mocked(p.password).mockResolvedValueOnce(undefined);
-       vi.mocked(p.isCancel).mockReturnValueOnce(true);
+      it('should return null when user cancels prompt', async () => {
+        vi.mocked(p.password).mockResolvedValueOnce(undefined as unknown as string);
+        vi.mocked(p.isCancel).mockReturnValueOnce(true);
 
-       const token = await promptForToken();
+        const token = await promptForToken();
 
-       expect(token).toBeNull();
-     });
+        expect(token).toBeNull();
+      });
 
      it('should validate token length', async () => {
        vi.mocked(p.password).mockResolvedValueOnce('short');
@@ -238,38 +238,38 @@ describe('Credentials Management', () => {
        expect(passwordCall.validate).toBeDefined();
      });
 
-     it('should call validator with empty string and return error message', async () => {
-       vi.mocked(p.password).mockResolvedValueOnce('valid-token-12345');
-       vi.mocked(p.isCancel).mockReturnValueOnce(false);
+      it('should call validator with empty string and return error message', async () => {
+        vi.mocked(p.password).mockResolvedValueOnce('valid-token-12345');
+        vi.mocked(p.isCancel).mockReturnValueOnce(false);
 
-       await promptForToken();
+        await promptForToken();
 
-       const passwordCall = vi.mocked(p.password).mock.calls[0][0];
-       const validationResult = passwordCall.validate('');
-       expect(validationResult).toBe('Please enter a valid access token');
-     });
+        const passwordCall = vi.mocked(p.password).mock.calls[0][0] as any;
+        const validationResult = passwordCall.validate('');
+        expect(validationResult).toBe('Please enter a valid access token');
+      });
 
-     it('should call validator with short token and return error message', async () => {
-       vi.mocked(p.password).mockResolvedValueOnce('valid-token-12345');
-       vi.mocked(p.isCancel).mockReturnValueOnce(false);
+      it('should call validator with short token and return error message', async () => {
+        vi.mocked(p.password).mockResolvedValueOnce('valid-token-12345');
+        vi.mocked(p.isCancel).mockReturnValueOnce(false);
 
-       await promptForToken();
+        await promptForToken();
 
-       const passwordCall = vi.mocked(p.password).mock.calls[0][0];
-       const validationResult = passwordCall.validate('short');
-       expect(validationResult).toBe('Please enter a valid access token');
-     });
+        const passwordCall = vi.mocked(p.password).mock.calls[0][0] as any;
+        const validationResult = passwordCall.validate('short');
+        expect(validationResult).toBe('Please enter a valid access token');
+      });
 
-     it('should call validator with valid token and return undefined', async () => {
-       vi.mocked(p.password).mockResolvedValueOnce('valid-token-12345');
-       vi.mocked(p.isCancel).mockReturnValueOnce(false);
+      it('should call validator with valid token and return undefined', async () => {
+        vi.mocked(p.password).mockResolvedValueOnce('valid-token-12345');
+        vi.mocked(p.isCancel).mockReturnValueOnce(false);
 
-       await promptForToken();
+        await promptForToken();
 
-       const passwordCall = vi.mocked(p.password).mock.calls[0][0];
-       const validationResult = passwordCall.validate('valid-token-12345');
-       expect(validationResult).toBeUndefined();
-     });
+        const passwordCall = vi.mocked(p.password).mock.calls[0][0] as any;
+        const validationResult = passwordCall.validate('valid-token-12345');
+        expect(validationResult).toBeUndefined();
+      });
 
      it('should display note with token URL', async () => {
        vi.mocked(p.password).mockResolvedValueOnce('valid-token-12345');
@@ -323,14 +323,14 @@ describe('Credentials Management', () => {
        expect(p.password).toHaveBeenCalled();
      });
 
-     it('should return null when user cancels prompt', async () => {
-       vi.mocked(p.password).mockResolvedValueOnce(undefined);
-       vi.mocked(p.isCancel).mockReturnValueOnce(true);
+      it('should return null when user cancels prompt', async () => {
+        vi.mocked(p.password).mockResolvedValueOnce(undefined as unknown as string);
+        vi.mocked(p.isCancel).mockReturnValueOnce(true);
 
-       const token = await getOrPromptForToken({ skipPrompt: false });
+        const token = await getOrPromptForToken({ skipPrompt: false });
 
-       expect(token).toBeNull();
-     });
+        expect(token).toBeNull();
+      });
 
      it('should not save token when user declines', async () => {
        vi.mocked(p.password).mockResolvedValueOnce('new-token-no-save');
@@ -351,10 +351,10 @@ describe('Credentials Management', () => {
        }
      });
 
-     it('should not save token when confirm is cancelled', async () => {
-       vi.mocked(p.password).mockResolvedValueOnce('new-token-cancelled');
-       vi.mocked(p.isCancel).mockImplementation((value) => value === undefined);
-       vi.mocked(p.confirm).mockResolvedValueOnce(undefined);
+      it('should not save token when confirm is cancelled', async () => {
+        vi.mocked(p.password).mockResolvedValueOnce('new-token-cancelled');
+        vi.mocked(p.isCancel).mockImplementation((value) => value === undefined);
+        vi.mocked(p.confirm).mockResolvedValueOnce(undefined as unknown as boolean);
 
        const token = await getOrPromptForToken({ skipPrompt: false, saveToken: true });
 

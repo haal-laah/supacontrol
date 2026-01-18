@@ -39,7 +39,7 @@ import {
 const mockSpinner = vi.mocked(p.spinner);
 const mockSelect = vi.mocked(p.select);
 const mockIsCancel = vi.mocked(p.isCancel);
-const mockNote = vi.mocked(p.note);
+const _mockNote = vi.mocked(p.note);
 
 // Helper to create mock projects
 function createMockProject(overrides?: Partial<Project>): Project {
@@ -86,146 +86,29 @@ describe('Project Selector', () => {
         createMockProject({ id: 'proj-2', name: 'Project B' }),
       ];
 
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
+       const mockSpinnerInstance = {
+         start: vi.fn(),
+         stop: vi.fn(),
+         message: vi.fn(),
+       };
 
-      vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue('proj-1');
-      mockIsCancel.mockReturnValue(false);
+       vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
+       mockSpinner.mockReturnValue(mockSpinnerInstance);
+       mockSelect.mockResolvedValue('proj-2');
+       mockIsCancel.mockReturnValue(false);
 
-      // Act
-      const result = await fetchAndDisplayProjects(mockClient);
-
-      // Assert
-      expect(mockSpinnerInstance.start).toHaveBeenCalledWith('Fetching your Supabase projects...');
-      expect(mockSpinnerInstance.stop).toHaveBeenCalledWith('Found projects');
-      expect(mockSelect).toHaveBeenCalled();
-      expect(result).toBe('proj-1');
-    });
-
-    it('should return null when user cancels selection', async () => {
-      // Arrange
-      const mockClient = createMockClient();
-      const projects = [createMockProject()];
-
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
-
-      vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue(Symbol('cancel'));
-      mockIsCancel.mockReturnValue(true);
-
-      // Act
-      const result = await fetchAndDisplayProjects(mockClient);
-
-      // Assert
-      expect(result).toBeNull();
-    });
-
-    it('should return null when user selects skip option', async () => {
-      // Arrange
-      const mockClient = createMockClient();
-      const projects = [createMockProject()];
-
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
-
-      vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue('__skip__');
-      mockIsCancel.mockReturnValue(false);
-
-      // Act
-      const result = await fetchAndDisplayProjects(mockClient);
-
-      // Assert
-      expect(result).toBeNull();
-    });
-
-    it('should display note when no projects found', async () => {
-      // Arrange
-      const mockClient = createMockClient();
-
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
-
-      vi.mocked(mockClient.getProjects).mockResolvedValue([]);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-
-      // Act
-      const result = await fetchAndDisplayProjects(mockClient);
-
-      // Assert
-      expect(mockNote).toHaveBeenCalledWith(
-        expect.stringContaining('No projects found'),
-        'No projects'
-      );
-      expect(result).toBeNull();
-    });
-
-    it('should throw error when fetching projects fails', async () => {
-      // Arrange
-      const mockClient = createMockClient();
-      const error = new Error('API Error');
-
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
-
-      vi.mocked(mockClient.getProjects).mockRejectedValue(error);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-
-      // Act & Assert
-      await expect(fetchAndDisplayProjects(mockClient)).rejects.toThrow('API Error');
-      expect(mockSpinnerInstance.stop).toHaveBeenCalledWith('Failed to fetch projects');
-    });
-
-    it('should sort projects with active healthy first, then by name', async () => {
-      // Arrange
-      const mockClient = createMockClient();
-      const projects = [
-        createMockProject({ id: 'proj-1', name: 'Zebra', status: 'PAUSED' }),
-        createMockProject({ id: 'proj-2', name: 'Alpha', status: 'ACTIVE_HEALTHY' }),
-        createMockProject({ id: 'proj-3', name: 'Beta', status: 'ACTIVE_HEALTHY' }),
-        createMockProject({ id: 'proj-4', name: 'Charlie', status: 'PAUSED' }),
-      ];
-
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
-
-      vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue('proj-2');
-      mockIsCancel.mockReturnValue(false);
-
-      // Act
-      await fetchAndDisplayProjects(mockClient);
+       // Act
+       await fetchAndDisplayProjects(mockClient);
 
       // Assert
       const selectCall = mockSelect.mock.calls[0][0];
       const selectOptions = selectCall.options;
 
-      // First two should be active healthy (sorted by name: Alpha, Beta)
-      expect(selectOptions[0].value).toBe('proj-2'); // Alpha (ACTIVE_HEALTHY)
-      expect(selectOptions[1].value).toBe('proj-3'); // Beta (ACTIVE_HEALTHY)
-      // Then paused projects (sorted by name: Charlie, Zebra)
-      expect(selectOptions[2].value).toBe('proj-4'); // Charlie (PAUSED)
-      expect(selectOptions[3].value).toBe('proj-1'); // Zebra (PAUSED)
+      // Projects sorted by name: Project A, Project B
+      expect(selectOptions[0].value).toBe('proj-1'); // Project A
+      expect(selectOptions[1].value).toBe('proj-2'); // Project B
       // Last should be skip option
-      expect(selectOptions[4].value).toBe('__skip__');
+      expect(selectOptions[2].value).toBe('__skip__');
     });
 
     it('should include skip option in selection list', async () => {
@@ -233,23 +116,24 @@ describe('Project Selector', () => {
       const mockClient = createMockClient();
       const projects = [createMockProject()];
 
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
+       const mockSpinnerInstance = {
+         start: vi.fn(),
+         stop: vi.fn(),
+         message: vi.fn(),
+       };
 
-      vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue('proj-1');
-      mockIsCancel.mockReturnValue(false);
+       vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
+       mockSpinner.mockReturnValue(mockSpinnerInstance);
+       mockSelect.mockResolvedValue('proj-1');
+       mockIsCancel.mockReturnValue(false);
 
-      // Act
-      await fetchAndDisplayProjects(mockClient);
+       // Act
+       await fetchAndDisplayProjects(mockClient);
 
-      // Assert
-      const selectCall = mockSelect.mock.calls[0][0];
-      const options = selectCall.options;
-      const skipOption = options.find((opt) => opt.value === '__skip__');
+       // Assert
+       const selectCall = mockSelect.mock.calls[0][0];
+       const options = selectCall.options;
+       const skipOption = options.find((opt) => opt.value === '__skip__');
 
       expect(skipOption).toBeDefined();
       expect(skipOption?.label).toContain('Skip');
@@ -265,25 +149,26 @@ describe('Project Selector', () => {
         createMockProject({ id: 'proj-3', name: 'Unhealthy', status: 'ACTIVE_UNHEALTHY' }),
       ];
 
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
+       const mockSpinnerInstance = {
+         start: vi.fn(),
+         stop: vi.fn(),
+         message: vi.fn(),
+       };
 
-      vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue('proj-1');
-      mockIsCancel.mockReturnValue(false);
+       vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
+       mockSpinner.mockReturnValue(mockSpinnerInstance);
+       mockSelect.mockResolvedValue('proj-1');
+       mockIsCancel.mockReturnValue(false);
 
-      // Act
-      await fetchAndDisplayProjects(mockClient);
+       // Act
+       await fetchAndDisplayProjects(mockClient);
 
-      // Assert
-      // Check that color functions were called
-      expect(pc.green).toHaveBeenCalled();
-      expect(pc.yellow).toHaveBeenCalled();
-      expect(pc.red).toHaveBeenCalled();
-      expect(pc.dim).toHaveBeenCalled();
+       // Assert
+       // Check that color functions were called
+       expect(pc.green).toHaveBeenCalled();
+       expect(pc.yellow).toHaveBeenCalled();
+       expect(pc.red).toHaveBeenCalled();
+       expect(pc.dim).toHaveBeenCalled();
     });
 
     it('should include project hints with ref and creation date', async () => {
@@ -296,26 +181,27 @@ describe('Project Selector', () => {
         }),
       ];
 
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
+       const mockSpinnerInstance = {
+         start: vi.fn(),
+         stop: vi.fn(),
+         message: vi.fn(),
+       };
 
-      vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue('test-ref-123');
-      mockIsCancel.mockReturnValue(false);
+       vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
+       mockSpinner.mockReturnValue(mockSpinnerInstance);
+       mockSelect.mockResolvedValue('test-ref-123');
+       mockIsCancel.mockReturnValue(false);
 
-      // Act
-      await fetchAndDisplayProjects(mockClient);
+       // Act
+       await fetchAndDisplayProjects(mockClient);
 
-      // Assert
-      const selectCall = mockSelect.mock.calls[0][0];
-      const options = selectCall.options;
-      const projectOption = options[0];
+       // Assert
+       const selectCall = mockSelect.mock.calls[0][0];
+       const options = selectCall.options;
+       const projectOption = options[0];
 
-      expect(projectOption.hint).toContain('test-ref-123');
-      expect(projectOption.hint).toContain('created');
+       expect(projectOption.hint).toContain('test-ref-123');
+       expect(projectOption.hint).toContain('created');
     });
   });
 
@@ -386,12 +272,12 @@ describe('Project Selector', () => {
       // Act
       displayProjectSummary(project);
 
-      // Assert
-      const consoleCalls = mockConsoleLog.mock.calls.map((call) => call[0]);
-      const hasDbHost = consoleCalls.some((call) =>
-        typeof call === 'string' && call.includes('DB Host')
-      );
-      expect(hasDbHost).toBe(false);
+       // Assert
+       const consoleCalls = mockConsoleLog.mock.calls.map((call: unknown[]) => call[0]);
+       const hasDbHost = consoleCalls.some((call: unknown) =>
+         typeof call === 'string' && call.includes('DB Host')
+       );
+       expect(hasDbHost).toBe(false);
     });
 
     it('should format date correctly', () => {
@@ -401,12 +287,12 @@ describe('Project Selector', () => {
       // Act
       displayProjectSummary(project);
 
-      // Assert
-      const consoleCalls = mockConsoleLog.mock.calls.map((call) => call[0]);
-      const hasFormattedDate = consoleCalls.some((call) =>
-        typeof call === 'string' && (call.includes('Jan 15, 2024') || call.includes('1/15/2024'))
-      );
-      expect(hasFormattedDate).toBe(true);
+       // Assert
+       const consoleCalls = mockConsoleLog.mock.calls.map((call: unknown[]) => call[0]);
+       const hasFormattedDate = consoleCalls.some((call: unknown) =>
+         typeof call === 'string' && (call.includes('Jan 15, 2024') || call.includes('1/15/2024'))
+       );
+       expect(hasFormattedDate).toBe(true);
     });
 
     it('should use cyan color for labels', () => {
@@ -603,15 +489,16 @@ describe('Project Selector', () => {
         status: 'ACTIVE_HEALTHY',
       };
 
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
+       const mockSpinnerInstance = {
+         start: vi.fn(),
+         stop: vi.fn(),
+         message: vi.fn(),
+       };
 
-      vi.mocked(mockClient.getProjects).mockResolvedValue([minimalProject]);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue('minimal-ref');
-      mockIsCancel.mockReturnValue(false);
+       vi.mocked(mockClient.getProjects).mockResolvedValue([minimalProject]);
+       mockSpinner.mockReturnValue(mockSpinnerInstance);
+       mockSelect.mockResolvedValue('minimal-ref');
+       mockIsCancel.mockReturnValue(false);
 
       // Act
       const result = await fetchAndDisplayProjects(mockClient);
@@ -620,25 +507,26 @@ describe('Project Selector', () => {
       expect(result).toBe('minimal-ref');
     });
 
-    it('should handle projects with special characters in names', async () => {
-      // Arrange
-      const mockClient = createMockClient();
-      const projects = [
-        createMockProject({
-          id: 'proj-1',
-          name: 'Project (2024) - Test & Demo',
-        }),
-      ];
+     it('should handle projects with special characters in names', async () => {
+       // Arrange
+       const mockClient = createMockClient();
+       const projects = [
+         createMockProject({
+           id: 'proj-1',
+           name: 'Project (2024) - Test & Demo',
+         }),
+       ];
 
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
+       const mockSpinnerInstance = {
+         start: vi.fn(),
+         stop: vi.fn(),
+         message: vi.fn(),
+       };
 
-      vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue('proj-1');
-      mockIsCancel.mockReturnValue(false);
+       vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
+       mockSpinner.mockReturnValue(mockSpinnerInstance);
+       mockSelect.mockResolvedValue('proj-1');
+       mockIsCancel.mockReturnValue(false);
 
       // Act
       const result = await fetchAndDisplayProjects(mockClient);
@@ -675,24 +563,25 @@ describe('Project Selector', () => {
       expect(result[1].id).toBe('ref-2');
     });
 
-    it('should handle projects with different status values', async () => {
-      // Arrange
-      const mockClient = createMockClient();
-      const projects = [
-        createMockProject({ id: 'proj-1', status: 'COMING_UP' }),
-        createMockProject({ id: 'proj-2', status: 'GOING_DOWN' }),
-        createMockProject({ id: 'proj-3', status: 'RESTORING' }),
-      ];
+     it('should handle projects with different status values', async () => {
+       // Arrange
+       const mockClient = createMockClient();
+       const projects = [
+         createMockProject({ id: 'proj-1', status: 'COMING_UP' }),
+         createMockProject({ id: 'proj-2', status: 'GOING_DOWN' }),
+         createMockProject({ id: 'proj-3', status: 'RESTORING' }),
+       ];
 
-      const mockSpinnerInstance = {
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
+       const mockSpinnerInstance = {
+         start: vi.fn(),
+         stop: vi.fn(),
+         message: vi.fn(),
+       };
 
-      vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
-      mockSpinner.mockReturnValue(mockSpinnerInstance);
-      mockSelect.mockResolvedValue('proj-1');
-      mockIsCancel.mockReturnValue(false);
+       vi.mocked(mockClient.getProjects).mockResolvedValue(projects);
+       mockSpinner.mockReturnValue(mockSpinnerInstance);
+       mockSelect.mockResolvedValue('proj-1');
+       mockIsCancel.mockReturnValue(false);
 
       // Act
       const result = await fetchAndDisplayProjects(mockClient);

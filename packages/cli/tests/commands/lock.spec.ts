@@ -94,19 +94,21 @@ describe('Lock Command', () => {
         },
       };
       mockLoadConfigOrExit.mockResolvedValue(config);
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: config.environments.staging,
-      });
-      mockIsEnvironmentLocked.mockReturnValue(false);
-      mockWriteConfig.mockResolvedValue(undefined);
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: config.environments.staging,
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
+       mockIsEnvironmentLocked.mockReturnValue(false);
+       mockWriteConfig.mockResolvedValue('');
 
-      const cmd = createLockCommand();
-      
-      await expect(cmd.parseAsync(['node', 'lock', 'staging'])).resolves.not.toThrow();
-      
-      expect(mockWriteConfig).toHaveBeenCalled();
-      expect(config.environments.staging.locked).toBe(true);
+       const cmd = createLockCommand();
+       
+       await expect(cmd.parseAsync(['node', 'lock', 'staging'])).resolves.not.toThrow();
+       
+       expect(mockWriteConfig).toHaveBeenCalled();
+       expect(config.environments.staging.locked).toBe(true);
     });
 
     it('should do nothing if already locked', async () => {
@@ -116,19 +118,21 @@ describe('Lock Command', () => {
           staging: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [], locked: true },
         },
       };
-      mockLoadConfigOrExit.mockResolvedValue(config);
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: config.environments.staging,
-      });
-      mockIsEnvironmentLocked.mockReturnValue(true);
+       mockLoadConfigOrExit.mockResolvedValue(config);
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: config.environments.staging,
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
+       mockIsEnvironmentLocked.mockReturnValue(true);
 
-      const cmd = createLockCommand();
-      
-      await expect(cmd.parseAsync(['node', 'lock', 'staging'])).resolves.not.toThrow();
-      
-      // Should not write config
-      expect(mockWriteConfig).not.toHaveBeenCalled();
+       const cmd = createLockCommand();
+       
+       await expect(cmd.parseAsync(['node', 'lock', 'staging'])).resolves.not.toThrow();
+       
+       // Should not write config
+       expect(mockWriteConfig).not.toHaveBeenCalled();
     });
 
     it('should lock current environment when no argument', async () => {
@@ -139,20 +143,22 @@ describe('Lock Command', () => {
         },
       };
       mockLoadConfigOrExit.mockResolvedValue(config);
-      mockLoadConfig.mockResolvedValue(config);
-      mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: config.environments.staging,
-      });
-      mockIsEnvironmentLocked.mockReturnValue(false);
-      mockWriteConfig.mockResolvedValue(undefined);
+       mockLoadConfig.mockResolvedValue(config);
+       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: config.environments.staging,
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
+       mockIsEnvironmentLocked.mockReturnValue(false);
+       mockWriteConfig.mockResolvedValue('');
 
-      const cmd = createLockCommand();
-      
-      await expect(cmd.parseAsync(['node', 'lock'])).resolves.not.toThrow();
-      
-      expect(mockWriteConfig).toHaveBeenCalled();
+       const cmd = createLockCommand();
+       
+       await expect(cmd.parseAsync(['node', 'lock'])).resolves.not.toThrow();
+       
+       expect(mockWriteConfig).toHaveBeenCalled();
     });
 
     it('should fail when environment not found', async () => {
@@ -212,20 +218,22 @@ describe('Unlock Command', () => {
           staging: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [], locked: true },
         },
       };
-      mockLoadConfigOrExit.mockResolvedValue(config);
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: config.environments.staging,
-      });
-      mockIsEnvironmentLocked.mockReturnValue(true);
-      mockWriteConfig.mockResolvedValue(undefined);
+       mockLoadConfigOrExit.mockResolvedValue(config);
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: config.environments.staging,
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
+       mockIsEnvironmentLocked.mockReturnValue(true);
+       mockWriteConfig.mockResolvedValue('');
 
-      const cmd = createUnlockCommand();
-      
-      await expect(cmd.parseAsync(['node', 'unlock', 'staging'])).resolves.not.toThrow();
-      
-      expect(mockWriteConfig).toHaveBeenCalled();
-      expect(config.environments.staging.locked).toBe(false);
+       const cmd = createUnlockCommand();
+       
+       await expect(cmd.parseAsync(['node', 'unlock', 'staging'])).resolves.not.toThrow();
+       
+       expect(mockWriteConfig).toHaveBeenCalled();
+       expect(config.environments.staging.locked).toBe(false);
     });
 
     it('should do nothing if already unlocked', async () => {
@@ -235,19 +243,21 @@ describe('Unlock Command', () => {
           staging: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [], locked: false },
         },
       };
-      mockLoadConfigOrExit.mockResolvedValue(config);
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: config.environments.staging,
-      });
-      mockIsEnvironmentLocked.mockReturnValue(false);
+       mockLoadConfigOrExit.mockResolvedValue(config);
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: config.environments.staging,
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
+       mockIsEnvironmentLocked.mockReturnValue(false);
 
-      const cmd = createUnlockCommand();
-      
-      await expect(cmd.parseAsync(['node', 'unlock', 'staging'])).resolves.not.toThrow();
-      
-      // Should not write config
-      expect(mockWriteConfig).not.toHaveBeenCalled();
+       const cmd = createUnlockCommand();
+       
+       await expect(cmd.parseAsync(['node', 'unlock', 'staging'])).resolves.not.toThrow();
+       
+       // Should not write config
+       expect(mockWriteConfig).not.toHaveBeenCalled();
     });
 
     it('should require confirmation for production unlock', async () => {
@@ -257,21 +267,23 @@ describe('Unlock Command', () => {
           production: { project_ref: 'prod-ref', git_branches: ['main'], protected_operations: [], locked: true },
         },
       };
-      mockLoadConfigOrExit.mockResolvedValue(config);
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'production',
-        config: config.environments.production,
-      });
-      mockIsEnvironmentLocked.mockReturnValue(true);
-      mockConfirm.mockResolvedValue(true);
-      mockWriteConfig.mockResolvedValue(undefined);
+       mockLoadConfigOrExit.mockResolvedValue(config);
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'production',
+         config: config.environments.production,
+         projectRef: 'prod-ref',
+         matchType: 'exact' as const,
+       });
+       mockIsEnvironmentLocked.mockReturnValue(true);
+       mockConfirm.mockResolvedValue(true);
+       mockWriteConfig.mockResolvedValue('');
 
-      const cmd = createUnlockCommand();
-      
-      await expect(cmd.parseAsync(['node', 'unlock', 'production'])).resolves.not.toThrow();
-      
-      expect(mockConfirm).toHaveBeenCalled();
-      expect(mockWriteConfig).toHaveBeenCalled();
+       const cmd = createUnlockCommand();
+       
+       await expect(cmd.parseAsync(['node', 'unlock', 'production'])).resolves.not.toThrow();
+       
+       expect(mockConfirm).toHaveBeenCalled();
+       expect(mockWriteConfig).toHaveBeenCalled();
     });
 
     it('should cancel when user declines production unlock', async () => {
@@ -281,19 +293,21 @@ describe('Unlock Command', () => {
           production: { project_ref: 'prod-ref', git_branches: ['main'], protected_operations: [], locked: true },
         },
       };
-      mockLoadConfigOrExit.mockResolvedValue(config);
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'production',
-        config: config.environments.production,
-      });
-      mockIsEnvironmentLocked.mockReturnValue(true);
-      mockConfirm.mockResolvedValue(false);
+       mockLoadConfigOrExit.mockResolvedValue(config);
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'production',
+         config: config.environments.production,
+         projectRef: 'prod-ref',
+         matchType: 'exact' as const,
+       });
+       mockIsEnvironmentLocked.mockReturnValue(true);
+       mockConfirm.mockResolvedValue(false);
 
-      const cmd = createUnlockCommand();
-      
-      await expect(cmd.parseAsync(['node', 'unlock', 'production'])).rejects.toThrow(/process\.exit/);
-      
-      expect(mockWriteConfig).not.toHaveBeenCalled();
+       const cmd = createUnlockCommand();
+       
+       await expect(cmd.parseAsync(['node', 'unlock', 'production'])).rejects.toThrow(/process\.exit/);
+       
+       expect(mockWriteConfig).not.toHaveBeenCalled();
     });
 
     it('should unlock current environment when no argument', async () => {
@@ -304,20 +318,22 @@ describe('Unlock Command', () => {
         },
       };
       mockLoadConfigOrExit.mockResolvedValue(config);
-      mockLoadConfig.mockResolvedValue(config);
-      mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: config.environments.staging,
-      });
-      mockIsEnvironmentLocked.mockReturnValue(true);
-      mockWriteConfig.mockResolvedValue(undefined);
+       mockLoadConfig.mockResolvedValue(config);
+       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: config.environments.staging,
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
+       mockIsEnvironmentLocked.mockReturnValue(true);
+       mockWriteConfig.mockResolvedValue('');
 
-      const cmd = createUnlockCommand();
-      
-      await expect(cmd.parseAsync(['node', 'unlock'])).resolves.not.toThrow();
-      
-      expect(mockWriteConfig).toHaveBeenCalled();
+       const cmd = createUnlockCommand();
+       
+       await expect(cmd.parseAsync(['node', 'unlock'])).resolves.not.toThrow();
+       
+       expect(mockWriteConfig).toHaveBeenCalled();
     });
 
     it('should detect production-like environments by main branch', async () => {
@@ -327,21 +343,23 @@ describe('Unlock Command', () => {
           prod: { project_ref: 'prod-ref', git_branches: ['main'], protected_operations: [], locked: true },
         },
       };
-      mockLoadConfigOrExit.mockResolvedValue(config);
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'prod',
-        config: config.environments.prod,
-      });
-      mockIsEnvironmentLocked.mockReturnValue(true);
-      mockConfirm.mockResolvedValue(true);
-      mockWriteConfig.mockResolvedValue(undefined);
+       mockLoadConfigOrExit.mockResolvedValue(config);
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'prod',
+         config: config.environments.prod,
+         projectRef: 'prod-ref',
+         matchType: 'exact' as const,
+       });
+       mockIsEnvironmentLocked.mockReturnValue(true);
+       mockConfirm.mockResolvedValue(true);
+       mockWriteConfig.mockResolvedValue('');
 
-      const cmd = createUnlockCommand();
-      
-      await expect(cmd.parseAsync(['node', 'unlock', 'prod'])).resolves.not.toThrow();
-      
-      // Should require confirmation because it has 'main' branch
-      expect(mockConfirm).toHaveBeenCalled();
+       const cmd = createUnlockCommand();
+       
+       await expect(cmd.parseAsync(['node', 'unlock', 'prod'])).resolves.not.toThrow();
+       
+       // Should require confirmation because it has 'main' branch
+       expect(mockConfirm).toHaveBeenCalled();
     });
   });
 });

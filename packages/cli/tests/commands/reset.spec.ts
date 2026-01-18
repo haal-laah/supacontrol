@@ -144,10 +144,12 @@ describe('Reset Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: true, cancelled: false });
@@ -184,10 +186,12 @@ describe('Reset Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: true, cancelled: false });
@@ -212,10 +216,12 @@ describe('Reset Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
       mockConfirm.mockResolvedValue(true);
       mockRunSupabase.mockResolvedValue({ success: true, exitCode: 0, stdout: '', stderr: '' });
@@ -238,10 +244,12 @@ describe('Reset Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: false, cancelled: false });
@@ -261,10 +269,12 @@ describe('Reset Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: false, cancelled: true });
@@ -284,10 +294,12 @@ describe('Reset Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: true, cancelled: false });
@@ -308,10 +320,12 @@ describe('Reset Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: true, cancelled: false });
@@ -335,10 +349,12 @@ describe('Reset Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
       mockBuildGuardContext.mockReturnValue({} as any);
       mockRunGuards.mockResolvedValue({ allowed: true, cancelled: false });
@@ -362,10 +378,12 @@ describe('Reset Command', () => {
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
       mockGetCurrentLinkedProject.mockResolvedValue('staging-ref');
-      mockResolveEnvironmentByProjectRef.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockResolveEnvironmentByProjectRef.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
 
       const cmd = createResetCommand();
       
@@ -381,10 +399,12 @@ describe('Reset Command', () => {
       });
       mockGetCurrentBranch.mockResolvedValue('develop');
       mockHasUncommittedChanges.mockResolvedValue(false);
-      mockGetEnvironmentByName.mockReturnValue({
-        name: 'staging',
-        config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
-      });
+       mockGetEnvironmentByName.mockReturnValue({
+         name: 'staging',
+         config: { project_ref: 'staging-ref', git_branches: ['develop'], protected_operations: [] },
+         projectRef: 'staging-ref',
+         matchType: 'exact' as const,
+       });
       mockIsEnvironmentLocked.mockReturnValue(false);
 
       const cmd = createResetCommand();
