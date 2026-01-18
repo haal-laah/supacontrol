@@ -67,7 +67,7 @@ function environmentToToml(name: string, env: Environment): string {
 export function configToToml(config: Config): string {
   const sections: string[] = [
     '# SupaControl Configuration',
-    '# https://github.com/your-org/supacontrol',
+    '# https://github.com/haal-laah/supacontrol',
     '',
     settingsToToml(config.settings),
   ];
