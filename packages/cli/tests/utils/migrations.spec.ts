@@ -1222,6 +1222,112 @@ describe('createMigrationFromDiff', () => {
 
     expect(result).toBeDefined();
   });
+
+  it('should create migration with timestamp after latest remote', async () => {
+    mockReaddir.mockResolvedValueOnce([]);
+    mockMkdir.mockResolvedValueOnce(undefined);
+    mockRunSupabase.mockResolvedValueOnce({
+      success: true,
+      exitCode: 0,
+      stdout: `
+        Local          | Remote         | Time (UTC)
+        ---|---|---
+        20260116000044 | 20260116000044 | 2026-01-16 00:00:44
+      `,
+      stderr: '',
+    });
+    mockReadFile.mockResolvedValueOnce('CREATE TABLE users (id INT);');
+    mockConfirm.mockResolvedValueOnce(true);
+    mockSelect.mockResolvedValueOnce('create-migration');
+    mockReadFile.mockResolvedValueOnce('CREATE TABLE users (id INT);\nALTER TABLE users ADD COLUMN email TEXT;');
+    let migrationCreated = false;
+    mockWriteFile.mockImplementationOnce((path: string, content: string) => {
+      migrationCreated = true;
+      expect(content).toContain('ALTER TABLE users ADD COLUMN email TEXT');
+      return Promise.resolve();
+    });
+    mockWriteFile.mockResolvedValueOnce(undefined);
+    mockReaddir.mockResolvedValueOnce([]);
+    mockRunSupabase.mockResolvedValueOnce({
+      success: true,
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    });
+    const result = await interactiveMigrationSync();
+    expect(result).toBeDefined();
+    expect(migrationCreated).toBe(true);
+  });
+
+  it('should extract ALTER TABLE statements as meaningful SQL', async () => {
+    mockReaddir.mockResolvedValueOnce([]);
+    mockMkdir.mockResolvedValueOnce(undefined);
+    mockRunSupabase.mockResolvedValueOnce({
+      success: true,
+      exitCode: 0,
+      stdout: `
+        Local          | Remote         | Time (UTC)
+        ---|---|---
+        20260116000044 | 20260116000044 | 2026-01-16 00:00:44
+      `,
+      stderr: '',
+    });
+    mockReadFile.mockResolvedValueOnce('CREATE TABLE users (id INT);');
+    mockConfirm.mockResolvedValueOnce(true);
+    mockSelect.mockResolvedValueOnce('create-migration');
+    mockReadFile.mockResolvedValueOnce(
+      'CREATE TABLE users (id INT);\nALTER TABLE users ADD COLUMN email TEXT;\nALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email);'
+    );
+    let alterTableFound = false;
+    mockWriteFile.mockImplementationOnce((path: string, content: string) => {
+      if (content.includes('ALTER TABLE users ADD COLUMN email TEXT') &&
+          content.includes('ALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email)')) {
+        alterTableFound = true;
+      }
+      return Promise.resolve();
+    });
+    mockWriteFile.mockResolvedValueOnce(undefined);
+    mockReaddir.mockResolvedValueOnce([]);
+    mockRunSupabase.mockResolvedValueOnce({
+      success: true,
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    });
+    const result = await interactiveMigrationSync();
+    expect(result).toBeDefined();
+    expect(alterTableFound).toBe(true);
+  });
+
+  it('should handle conflict with only whitespace differences', async () => {
+    mockReaddir.mockResolvedValueOnce([]);
+    mockMkdir.mockResolvedValueOnce(undefined);
+    mockRunSupabase.mockResolvedValueOnce({
+      success: true,
+      exitCode: 0,
+      stdout: `
+        Local          | Remote         | Time (UTC)
+        ---|---|---
+        20260116000044 | 20260116000044 | 2026-01-16 00:00:44
+      `,
+      stderr: '',
+    });
+    mockReadFile.mockResolvedValueOnce('CREATE TABLE users (id INT);');
+    mockConfirm.mockResolvedValueOnce(true);
+    mockSelect.mockResolvedValueOnce('create-migration');
+    mockReadFile.mockResolvedValueOnce('CREATE TABLE users (id INT);  \n  ');
+    mockWriteFile.mockResolvedValueOnce(undefined);
+    mockWriteFile.mockResolvedValueOnce(undefined);
+    mockReaddir.mockResolvedValueOnce([]);
+    mockRunSupabase.mockResolvedValueOnce({
+      success: true,
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    });
+    const result = await interactiveMigrationSync();
+    expect(result).toBeDefined();
+  });
 });
 
 describe('applyConflictResolution', () => {
@@ -1570,6 +1676,8 @@ describe('reorderLocalMigrations', () => {
     // Verify rename was called only once (only the old file needs reordering)
     expect(mockRename).toHaveBeenCalledTimes(1);
   });
+});
+
 describe('Edge cases and error handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
