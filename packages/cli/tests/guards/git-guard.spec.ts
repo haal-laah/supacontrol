@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { checkCleanGit, GUARD_NAME } from '../../src/guards/git-guard.js';
-import { createTestContext, BASE_CONFIG, BASE_ENVIRONMENTS } from '../fixtures/guard.fixtures.js';
+import { createTestContext, BASE_CONFIG } from '../fixtures/guard.fixtures.js';
 import { GIT_GUARD_CASES } from '../fixtures/guard.fixtures.js';
 import type { OperationType } from '../../src/guards/types.js';
 

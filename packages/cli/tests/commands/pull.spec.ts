@@ -41,14 +41,14 @@ vi.mock('../../src/guards/index.js', () => ({
 
 import { loadConfigOrExit } from '../../src/config/loader.js';
 import { resolveEnvironmentByProjectRef, getEnvironmentByName } from '../../src/config/resolver.js';
-import { getCurrentBranch, hasUncommittedChanges, clearGitCache } from '../../src/utils/git.js';
+import { getCurrentBranch, hasUncommittedChanges } from '../../src/utils/git.js';
 import { runSupabase, requireSupabaseCLI } from '../../src/utils/supabase.js';
-import { runGuards, buildGuardContext, clearProjectCache, getCurrentLinkedProject } from '../../src/guards/index.js';
+import { runGuards, buildGuardContext, getCurrentLinkedProject } from '../../src/guards/index.js';
 import { createPullCommand } from '../../src/commands/pull.js';
 
 const mockLoadConfigOrExit = vi.mocked(loadConfigOrExit);
 const mockResolveEnvironmentByProjectRef = vi.mocked(resolveEnvironmentByProjectRef);
-const mockGetEnvironmentByName = vi.mocked(getEnvironmentByName);
+const _mockGetEnvironmentByName = vi.mocked(getEnvironmentByName);
 const mockGetCurrentBranch = vi.mocked(getCurrentBranch);
 const mockHasUncommittedChanges = vi.mocked(hasUncommittedChanges);
 const mockRunSupabase = vi.mocked(runSupabase);

@@ -18,7 +18,7 @@ vi.mock('@clack/prompts', () => ({
 
 import * as p from '@clack/prompts';
 import { requestConfirmation, showOperationSummary } from '../../src/guards/confirm.js';
-import type { RiskLevel, OperationType } from '../../src/guards/types.js';
+import type { OperationType } from '../../src/guards/types.js';
 
 const mockNote = vi.mocked(p.note);
 const mockText = vi.mocked(p.text);

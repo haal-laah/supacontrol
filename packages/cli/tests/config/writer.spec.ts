@@ -15,7 +15,7 @@ import {
   configExists,
   writeConfig,
 } from '../../src/config/writer.js';
-import type { Config, Environment } from '../../src/config/schema.js';
+import type { Config } from '../../src/config/schema.js';
 
 describe('Config Writer', () => {
   let testDir: string;

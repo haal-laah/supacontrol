@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { loadConfig, loadConfigOrExit, getConfigDir, ConfigError } from '../../src/config/loader.js';
 import { VALID_CONFIGS, INVALID_CONFIGS } from '../fixtures/config.fixtures.js';
-import { writeFile, mkdir, rm, readFile } from 'node:fs/promises';
+import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -453,18 +453,18 @@ protected_operations = ["invalid"]
        errorSpy.mockRestore();
      });
 
-     it('should re-throw non-ConfigError exceptions', async () => {
-       await writeConfig(VALID_CONFIGS.minimal);
+      it('should re-throw non-ConfigError exceptions', async () => {
+        await writeConfig(VALID_CONFIGS.minimal);
 
-       // Mock loadConfig to throw a non-ConfigError
-       const originalLoadConfig = loadConfig;
-       const testError = new Error('Unexpected error');
+        // Mock loadConfig to throw a non-ConfigError
+        const _originalLoadConfig = loadConfig;
+        const _testError = new Error('Unexpected error');
 
-       // We can't easily mock the imported function, so we test the behavior
-       // by verifying that ConfigErrors are caught and non-ConfigErrors are not
-       const config = await loadConfigOrExit(testDir);
-       expect(config).not.toBeNull();
-     });
+        // We can't easily mock the imported function, so we test the behavior
+        // by verifying that ConfigErrors are caught and non-ConfigErrors are not
+        const config = await loadConfigOrExit(testDir);
+        expect(config).not.toBeNull();
+      });
 
      it('should print error message with red checkmark for ConfigError', async () => {
        await writeConfig(INVALID_CONFIGS.wrongType);

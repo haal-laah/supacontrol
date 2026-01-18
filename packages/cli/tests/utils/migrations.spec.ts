@@ -60,7 +60,7 @@ const mockRunSupabase = vi.mocked(runSupabase);
 const mockSpinner = vi.mocked(p.spinner);
 const mockConfirm = vi.mocked(p.confirm);
 const mockSelect = vi.mocked(p.select);
-const mockNote = vi.mocked(p.note);
+const _mockNote = vi.mocked(p.note);
 
 describe('Migration Utilities', () => {
   beforeEach(() => {
@@ -1098,9 +1098,9 @@ describe('createMigrationFromDiff', () => {
     mockReadFile.mockResolvedValueOnce('CREATE TABLE users (id INT);\nALTER TABLE users ADD COLUMN email TEXT;');
 
     // Verify writeFile is called with migration content
-    let migrationCreated = false;
+    let _migrationCreated = false;
     mockWriteFile.mockImplementationOnce((path: string, content: string) => {
-      migrationCreated = true;
+      _migrationCreated = true;
       // Verify content includes the ALTER TABLE statement
       expect(content).toContain('ALTER TABLE users ADD COLUMN email TEXT');
       return Promise.resolve();
@@ -1152,11 +1152,11 @@ describe('createMigrationFromDiff', () => {
     );
 
     // Verify migration content includes ALTER TABLE statements
-    let alterTableFound = false;
+    let _alterTableFound = false;
     mockWriteFile.mockImplementationOnce((path: string, content: string) => {
       if (content.includes('ALTER TABLE users ADD COLUMN email TEXT') &&
           content.includes('ALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email)')) {
-        alterTableFound = true;
+        _alterTableFound = true;
       }
       return Promise.resolve();
     });
@@ -1240,9 +1240,9 @@ describe('createMigrationFromDiff', () => {
     mockConfirm.mockResolvedValueOnce(true);
     mockSelect.mockResolvedValueOnce('create-migration');
     mockReadFile.mockResolvedValueOnce('CREATE TABLE users (id INT);\nALTER TABLE users ADD COLUMN email TEXT;');
-    let migrationCreated = false;
+    let _migrationCreated = false;
     mockWriteFile.mockImplementationOnce((path: string, content: string) => {
-      migrationCreated = true;
+      _migrationCreated = true;
       expect(content).toContain('ALTER TABLE users ADD COLUMN email TEXT');
       return Promise.resolve();
     });
@@ -1278,11 +1278,11 @@ describe('createMigrationFromDiff', () => {
     mockReadFile.mockResolvedValueOnce(
       'CREATE TABLE users (id INT);\nALTER TABLE users ADD COLUMN email TEXT;\nALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email);'
     );
-    let alterTableFound = false;
+    let _alterTableFound = false;
     mockWriteFile.mockImplementationOnce((path: string, content: string) => {
       if (content.includes('ALTER TABLE users ADD COLUMN email TEXT') &&
           content.includes('ALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email)')) {
-        alterTableFound = true;
+        _alterTableFound = true;
       }
       return Promise.resolve();
     });

@@ -46,7 +46,7 @@ import { loadConfigOrExit } from '../../src/config/loader.js';
 import { getEnvironmentByName, listEnvironments } from '../../src/config/resolver.js';
 import { runSupabase, requireSupabaseCLI } from '../../src/utils/supabase.js';
 import { checkMigrationSync, syncMigrations } from '../../src/utils/migrations.js';
-import { getCurrentLinkedProject, clearProjectCache } from '../../src/guards/project-guard.js';
+import { getCurrentLinkedProject } from '../../src/guards/project-guard.js';
 import * as p from '@clack/prompts';
 import { createSwitchCommand } from '../../src/commands/switch.js';
 

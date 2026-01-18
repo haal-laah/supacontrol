@@ -25,8 +25,7 @@ vi.mock('../../src/guards/project-guard.js', () => ({
 import * as p from '@clack/prompts';
 import { runGuards, buildGuardContext } from '../../src/guards/index.js';
 import { checkProjectMatch } from '../../src/guards/project-guard.js';
-import { BASE_ENVIRONMENTS, BASE_CONFIG, createTestContext } from '../fixtures/guard.fixtures.js';
-import type { GuardContext } from '../../src/guards/types.js';
+import { BASE_CONFIG, BASE_ENVIRONMENTS, createTestContext } from '../fixtures/guard.fixtures.js';
 
 const mockConfirm = vi.mocked(p.confirm);
 const mockText = vi.mocked(p.text);

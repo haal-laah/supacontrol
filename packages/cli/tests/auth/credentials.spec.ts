@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { tmpdir, homedir } from 'node:os';
 
 // Mock node:os homedir to use a temp directory
-const originalHomedir = homedir;
+const _originalHomedir = homedir;
 let mockHomeDir: string;
 
 vi.mock('node:os', async (importOriginal) => {

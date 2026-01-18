@@ -53,8 +53,7 @@ import { loadConfig, loadConfigOrExit } from '../../src/config/loader.js';
 import { resolveEnvironmentByProjectRef, getEnvironmentByName, listEnvironments } from '../../src/config/resolver.js';
 import { isEnvironmentLocked } from '../../src/config/schema.js';
 import { writeConfig } from '../../src/config/writer.js';
-import { clearGitCache } from '../../src/utils/git.js';
-import { getCurrentLinkedProject, clearProjectCache } from '../../src/guards/project-guard.js';
+import { getCurrentLinkedProject } from '../../src/guards/project-guard.js';
 import * as p from '@clack/prompts';
 import { createLockCommand, createUnlockCommand } from '../../src/commands/lock.js';
 

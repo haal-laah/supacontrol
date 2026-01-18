@@ -56,9 +56,9 @@ vi.mock('@clack/prompts', () => ({
 import { loadConfigOrExit } from '../../src/config/loader.js';
 import { resolveEnvironmentByProjectRef, getEnvironmentByName } from '../../src/config/resolver.js';
 import { isEnvironmentLocked } from '../../src/config/schema.js';
-import { getCurrentBranch, hasUncommittedChanges, clearGitCache } from '../../src/utils/git.js';
+import { getCurrentBranch, hasUncommittedChanges } from '../../src/utils/git.js';
 import { runSupabase, requireSupabaseCLI } from '../../src/utils/supabase.js';
-import { runGuards, buildGuardContext, clearProjectCache, getCurrentLinkedProject } from '../../src/guards/index.js';
+import { runGuards, buildGuardContext, getCurrentLinkedProject } from '../../src/guards/index.js';
 import * as p from '@clack/prompts';
 import { createResetCommand } from '../../src/commands/reset.js';
 
