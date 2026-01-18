@@ -1,6 +1,6 @@
 {
   "name": "@supacontrol/cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "CLI wrapper around Supabase CLI with safety guards and environment management",
   "type": "module",
   "main": "dist/index.js",
@@ -17,7 +17,8 @@
     "spc": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "engines": {
     "node": ">=18"
