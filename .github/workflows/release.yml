@@ -48,9 +48,8 @@ jobs:
           echo "Version verified: $PKG_VERSION"
 
       - name: Publish to npm
-        run: pnpm --filter @supacontrol/cli publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        working-directory: packages/cli
+        run: npm publish --provenance --access public
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
